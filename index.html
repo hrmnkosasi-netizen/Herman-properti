@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Herman Kosasi - Property Advisor</title>
+    <meta name="description" content="Temukan properti impian di PIK, Jakarta Utara dan sekitarnya bersama Herman Kosasi. Jual, Beli, Sewa Property Terpercaya.">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.brighton.co.id/hermankosasi"> 
+    <meta property="og:title" content="Herman Kosasi - Property Advisor">
+    <meta property="og:description" content="Cari Rumah, Ruko, & Apartemen di PIK & Jakarta Utara. Lihat listing terbaru di sini!">
+    <meta property="og:image" content="https://i.postimg.cc/1tX3mSBc/HERMAN-KOSASI.jpg">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+
+    <style>
+        /* CSS DASAR */
+        :root { --primary-yellow: #FFCC00; --dark-text: #1a1a1a; --gray-text: #666; --wa-green: #25D366; --bg-color: #f8f9fa; --danger-red: #ff4757; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--dark-text); padding-bottom: 50px; }
+        .main-header-yellow { background-color: var(--primary-yellow); padding: 30px 20px 60px 20px; color: var(--dark-text); border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; position: relative; z-index: 1; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .header-top-row { display: flex; justify-content: space-between; position: absolute; top: 20px; left: 0; width: 100%; padding: 0 20px; z-index: 5; pointer-events: none; }
+        .calendar-icon-btn { pointer-events: auto; font-size: 22px; color: var(--dark-text); background: rgba(255,255,255,0.5); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; border: none; margin-left: auto; }
+        .calendar-icon-btn:active { transform: scale(0.9); background: white; }
+        .header-content-flex { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-top: 10px; }
+        .profile-pic-header { width: 130px; height: 130px; border-radius: 50%; border: 4px solid white; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #fff; }
+        .agent-name-header { font-size: 22px; font-weight: 800; margin: 0; text-transform: uppercase; }
+        .agent-details-header { font-size: 14px; font-weight: 600; }
+        .agent-job { display: inline-block; background: rgba(255,255,255,0.6); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-top: 5px; }
+        .header-contact-links { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .contact-icon-btn { background: rgba(255,255,255,0.8); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; color: var(--dark-text); font-size: 18px; transition: 0.2s; }
+        .contact-icon-btn:hover { transform: scale(1.1); background: white; }
+        .stats-container-overlap { margin-top: -40px; position: relative; z-index: 2; padding: 0 15px; }
+        .stats-row { display: flex; justify-content: center; gap: 10px; }
+        .stat-box { background: white; flex: 1; padding: 12px 5px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; }
+        .stat-box:active { transform: scale(0.95); background-color: #f9f9f9; }
+        .stat-num { font-weight: 800; font-size: 20px; display: block; }
+        .stat-label { font-size: 10px; color: var(--gray-text); font-weight: 600; text-transform: uppercase;}
+        .section-box { background: white; margin: 20px 15px; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .about-section { border-left: 4px solid var(--primary-yellow); }
+        .about-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .about-text { font-size: 13px; line-height: 1.6; color: #444; text-align: justify; }
+        .feature-grid { padding: 0 15px; margin-bottom: 25px; display: grid; gap: 15px; }
+        .vendor-banner { background: linear-gradient(135deg, #222, #444); color: white; padding: 20px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .vendor-btn { background: var(--primary-yellow); color: black; text-decoration: none; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; border: none;}
+
+        /* CSS TAMBAHAN FITUR LENGKAP */
+        .btn-kirim-fav { background: var(--wa-green) !important; color: white !important; border: none !important; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3) !important; }
+        .btn-map-pill { display: inline-flex; align-items: center; gap: 5px; background: #e3f2fd; color: #007bff; text-decoration: none; padding: 4px 10px; border-radius: 15px; font-size: 10px; font-weight: 700; margin-left: 8px; transition: 0.2s; }
+        .btn-map-pill:active { background: #bbdefb; transform: scale(0.95); }
+        
+        .buyer-request-banner { background: white; border: 2px dashed #007bff; padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); transition: 0.2s; }
+        .buyer-request-banner:active { transform: scale(0.98); background: #f0f8ff; }
+        .buyer-icon-circle { width: 40px; height: 40px; background: #e3f2fd; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #007bff; font-size: 18px; }
+        .buyer-text { text-align: left; }
+        .buyer-text strong { display: block; font-size: 13px; color: #333; }
+        .buyer-text small { font-size: 11px; color: #666; }
+
+        /* CSS SMART BADGE & LIGHTBOX */
+        .status-tag.baru { background: #00c853; color: white; margin-right: 5px; box-shadow: 0 2px 5px rgba(0,200,83, 0.3); animation: pulseBadge 2s infinite; }
+        @keyframes pulseBadge { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .lightbox-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .lightbox-modal.active { opacity: 1; pointer-events: auto; }
+        .lightbox-content-wrapper { position: relative; width: 100%; max-width: 600px; text-align: center; }
+        .lightbox-img { max-width: 100%; max-height: 80vh; border-radius: 5px; box-shadow: 0 0 20px rgba(0,0,0,0.5); object-fit: contain; }
+        .lightbox-close-btn { position: absolute; top: -50px; right: 20px; background: rgba(255,255,255,0.2); color: white; width: 40px; height: 40px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .lightbox-hint { color: #aaa; font-size: 12px; margin-top: 10px; }
+
+        /* KPR BOX (TABS) */
+        .kpr-box { background: white; padding: 0; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); overflow: hidden; border-top: 4px solid var(--primary-yellow); }
+        .kpr-tabs { display: flex; background: #eee; }
+        .kpr-tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: 700; font-size: 13px; cursor: pointer; color: #666; transition: 0.3s; border-bottom: 3px solid transparent; }
+        .kpr-tab-btn.active { background: white; color: var(--dark-text); border-bottom-color: var(--primary-yellow); }
+        .kpr-content { padding: 20px; display: none; }
+        .kpr-content.active { display: block; animation: fadeIn 0.3s; }
+        .kpr-header { font-size: 15px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .kpr-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .kpr-input-group label { font-size: 11px; color: #555; display: block; margin-bottom: 4px; font-weight: 600; }
+        .kpr-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #fcfcfc; transition: 0.2s; }
+        .kpr-input:focus { border-color: var(--primary-yellow); outline: none; }
+        .btn-calc { width: 100%; background: var(--dark-text); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; }
+        .kpr-result-container { margin-top: 15px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ccc; padding: 15px; display: none; }
+        .kpr-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .kpr-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .kpr-val-bold { font-weight: 700; color: #333; }
+        .kpr-total-cicilan { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
+        .kpr-total-cicilan strong { font-size: 20px; color: var(--primary-yellow); text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+
+        /* FAQ & OTHERS */
+        .faq-section { padding: 0 15px; margin-bottom: 30px; }
+        .faq-header { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; margin-bottom: 15px; }
+        .faq-box { background: white; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); overflow: hidden; }
+        .faq-item { border-bottom: 1px solid #eee; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { width: 100%; background: none; border: none; padding: 15px; text-align: left; font-weight: 600; font-size: 13px; color: var(--dark-text); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-family: inherit; }
+        .faq-question i { color: #bbb; transition: transform 0.3s; }
+        .faq-answer { display: none; padding: 0 15px 15px 15px; font-size: 12px; line-height: 1.6; color: #666; }
+        .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s; }
+        .faq-item.active .faq-question { color: var(--primary-yellow); background: #fcfcfc; }
+        .faq-item.active .faq-question i { transform: rotate(180deg); color: var(--primary-yellow); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* FILTER AREA */
+        .search-filter-area { padding: 0 15px; margin-bottom: 20px; scroll-margin-top: 20px; }
+        .search-sort-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .search-box { position: relative; flex: 2; }
+        .search-input { width: 100%; padding: 12px 15px 12px 40px; border: none; border-radius: 12px; background: white; outline: none; font-family: inherit; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 13px;}
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; }
+        .btn-reset-filter { background: white; color: var(--danger-red); border: 1px solid #eee; width: 40px; height: 40px; border-radius: 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; }
+        .btn-reset-filter:active { transform: scale(0.95); background: #f9f9f9; }
+        .sort-box { flex: 1; position: relative; }
+        .sort-select { width: 100%; height: 40px; padding: 0 10px; border: none; border-radius: 12px; background: white; font-family: inherit; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); outline: none; }
+        .price-slider-container { padding: 10px 5px 25px 5px; }
+        .price-label-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--dark-text); margin-bottom: 10px; }
+        .noUi-target { border: none; box-shadow: none; background: #eee; height: 6px; }
+        .noUi-connect { background: var(--primary-yellow); }
+        .noUi-handle { border: 2px solid var(--primary-yellow); background: white; border-radius: 50%; width: 20px; height: 20px; right: -10px !important; top: -8px !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: grab; }
+        .noUi-handle:before, .noUi-handle:after { display: none; } 
+        .advanced-filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .filter-btn { border: none; background: white; padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--gray-text); cursor: pointer; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s;}
+        .filter-btn.active { background: var(--primary-yellow); color: var(--dark-text); box-shadow: 0 4px 10px rgba(255, 204, 0, 0.3); }
+
+        /* CARDS & MODALS */
+        .listing-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; margin-bottom: 30px; }
+        .property-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s; position: relative; }
+        .property-card:active { transform: scale(0.98); }
+        .card-image-wrapper { position: relative; height: 140px; background: #eee;}
+        .card-img { width: 100%; height: 100%; object-fit: cover; }
+        .badge-top-left { position: absolute; top: 8px; left: 8px; display: flex; gap: 5px; }
+        .status-tag { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: white; }
+        .status-tag.jual { background: var(--primary-yellow); color: black; }
+        .status-tag.sewa { background: #007bff; }
+        .hot-deal-badge { background: var(--danger-red); color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+        .btn-wishlist { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.8); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; z-index: 10; font-size: 16px; color: #ccc; transition: 0.2s; }
+        .btn-wishlist.active { color: #ff4757; background: white; transform: scale(1.1); }
+        .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .price-tag { font-size: 16px; font-weight: 800; color: var(--dark-text); margin-bottom: 4px; }
+        .prop-name { font-size: 12px; margin-bottom: 8px; line-height: 1.4; color: #333; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 34px; font-weight: 600;}
+        .location-row { font-size: 11px; color: #888; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+        .specs-row { display: flex; justify-content: space-between; color: var(--gray-text); font-size: 11px; background: #f9f9f9; padding: 5px; border-radius: 6px; }
+        .spec-item { display: flex; align-items: center; gap: 3px; }
+        .spec-item i { color: var(--primary-yellow); font-size: 12px; }
+        .card-btn { margin-top: 10px; background: #eee; color: #333; font-size: 11px; text-align: center; padding: 8px; border-radius: 6px; font-weight: 600; }
+        .no-result { grid-column: span 2; text-align: center; padding: 30px; color: #999; font-size: 14px; display: none; }
+        .loading-placeholder { grid-column: span 2; text-align: center; padding: 50px; color: #999; font-size: 14px; }
+        .testi-section { padding: 0 15px; margin-top: 30px; margin-bottom: 20px; }
+        .testi-header { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-weight: 700; font-size: 16px; }
+        .testi-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .testi-card { min-width: 260px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); border: 1px solid #eee; }
+        .testi-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .t-avatar { width: 35px; height: 35px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; font-size: 14px; }
+        .t-info h4 { margin: 0; font-size: 13px; }
+        .t-stars { color: var(--primary-yellow); font-size: 10px; }
+        .t-text { font-size: 12px; color: #555; line-height: 1.5; font-style: italic; }
+        
+        .detail-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; }
+        .detail-modal.active { transform: translateY(0); }
+        .detail-header { position: absolute; top: 0; left: 0; width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent); pointer-events: none; }
+        .back-btn { pointer-events: auto; color: white; font-size: 20px; background: rgba(0,0,0,0.3); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; backdrop-filter: blur(4px); }
+        .calendar-bg { background-color: var(--primary-yellow); min-height: 100vh; display: flex; flex-direction: column; }
+        .calendar-header-title { pointer-events: auto; font-size: 16px; font-weight: 700; color: #1a1a1a; margin-top: 5px; }
+        .calendar-content { padding: 80px 20px 20px 20px; flex: 1; overflow-y: auto; }
+        .calendar-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 5px solid #ccc; display: flex; gap: 15px; align-items: center; }
+        .cc-left { text-align: center; min-width: 50px; border-right: 1px solid #eee; padding-right: 15px; }
+        .cc-date { font-size: 24px; font-weight: 800; color: var(--dark-text); display: block; line-height: 1; }
+        .cc-month { font-size: 10px; text-transform: uppercase; font-weight: 700; color: #666; }
+        .cc-right { flex: 1; }
+        .cc-badge { font-size: 9px; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-bottom: 5px; }
+        .cc-badge.internal { background: #eee; color: #555; }
+        .cc-badge.umum { background: #007bff; color: white; }
+        .cc-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; color: #333; }
+        .cc-time { font-size: 11px; color: #666; }
+        .vendor-content { padding: 80px 20px 40px 20px; }
+        .vendor-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; text-align: center; color: #333; }
+        .form-divider { margin: 20px 0; border-top: 1px dashed #ccc; position: relative; }
+        .form-divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #f8f9fa; padding: 0 10px; font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold; }
+        .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 5px; color: #555; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 13px; background: white; }
+        .form-control:disabled { background: #eee; color: #999; cursor: not-allowed; }
+        .error-msg { color: var(--danger-red); font-size: 11px; margin-top: 5px; display: none; }
+        .form-control:focus { border-color: var(--primary-yellow); outline: none; background: #fffbeb; }
+        .btn-submit-wa { width: 100%; background: var(--wa-green); color: white; padding: 15px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 10px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3); display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .detail-gallery { height: 350px; width: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; background: #eee; }
+        .gallery-img { min-width: 100%; height: 100%; object-fit: cover; scroll-snap-align: center; }
+        .detail-content { padding: 25px 20px 100px 20px; background: white; border-radius: 25px 25px 0 0; margin-top: -30px; position: relative; z-index: 5; }
+        .d-price { font-size: 26px; font-weight: 800; color: var(--dark-text); margin-bottom: 5px; }
+        .d-title { font-size: 18px; color: #333; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+        .specs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 20px 0; }
+        .sg-item { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .sg-icon { font-size: 18px; color: var(--primary-yellow); margin-bottom: 6px; display: block;}
+        .sg-val { font-weight: 700; font-size: 13px; display: block; color: #333; line-height: 1.2;}
+        .sg-label { font-size: 10px; color: #888; margin-top: 2px; }
+        .desc-box h3, .facility-box h3, .video-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .desc-text { font-size: 14px; color: #555; line-height: 1.8; margin-bottom: 25px; white-space: pre-line; }
+        .facility-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .fac-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #444; }
+        .fac-item i { color: var(--wa-green); }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 10px; margin-bottom: 25px; background: black;}
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .detail-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px 20px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr 2fr; gap: 10px; z-index: 2001; }
+        .btn-booking { background: white; border: 2px solid var(--primary-yellow); color: #d4a000; padding: 12px; border-radius: 10px; font-weight: 700; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 13px; cursor: pointer;}
+        .btn-whatsapp { background: var(--wa-green); border: none; color: white; padding: 12px; border-radius: 10px; font-weight: 700; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3); font-size: 14px;}
+        
+        .similar-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .similar-card { min-width: 140px; width: 140px; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #eee; cursor: pointer; display:flex; flex-direction: column; }
+        .similar-img { width: 100%; height: 90px; object-fit: cover; }
+        .similar-body { padding: 8px; }
+        .similar-price { font-size: 12px; font-weight: 700; color: var(--dark-text); }
+        .similar-title { font-size: 10px; line-height: 1.3; color: #555; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-header-yellow">
+        <div class="header-top-row">
+            <button class="calendar-icon-btn" onclick="openCalendar()">
+                <i class="far fa-calendar-alt"></i>
+            </button>
+        </div>
+
+        <div class="header-content-flex">
+            <img src="https://i.postimg.cc/1tX3mSBc/HERMAN-KOSASI.jpg" 
+                 alt="Herman Kosasi" 
+                 class="profile-pic-header"
+                 onerror="this.src='https://ui-avatars.com/api/?name=Herman+Kosasi&background=FFFFFF&color=333&size=128&bold=true'">
+            
+            <div class="header-info">
+                <h1 class="agent-name-header">Herman Kosasi (LOUO)</h1>
+                <div class="agent-details-header">Brighton Titanium PIK <br> <span class="agent-job">Property Advisor</span></div>
+                <div class="header-contact-links">
+                    <a href="mailto:hrmnkosasi@gmail.com" class="contact-icon-btn"><i class="fas fa-envelope"></i></a>
+                    <a href="https://www.brighton.co.id/hermankosasi" target="_blank" class="contact-icon-btn"><i class="fas fa-globe"></i></a>
+                    <a href="https://wa.me/6285760035568" target="_blank" class="contact-icon-btn"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-container-overlap">
+        <div class="stats-row">
+            <div class="stat-box" onclick="clickStatBaru('all')"><span class="stat-num" id="countAll">0</span><span class="stat-label">Listing</span></div>
+            <div class="stat-box" onclick="clickStatBaru('jual')"><span class="stat-num" id="countJual">0</span><span class="stat-label">Jual</span></div>
+            <div class="stat-box" onclick="clickStatBaru('sewa')"><span class="stat-num" id="countSewa">0</span><span class="stat-label">Sewa</span></div>
+        </div>
+    </div>
+
+    <div class="section-box about-section">
+        <div class="about-title"><i class="fas fa-user-tie" style="color: var(--primary-yellow);"></i> Tentang Saya</div>
+        <div class="about-text">Professional Property Advisor dengan trade area Jakarta dan Sekitar. Saya siap membantu Anda menemukan properti impian dengan pelayanan terbaik dan transparan.</div>
+    </div>
+
+    <div class="feature-grid">
+        <div class="vendor-banner">
+            <div><h3 style="margin: 0; font-size: 16px; color: var(--primary-yellow);">Punya Properti?</h3><p style="margin: 3px 0 0 0; font-size: 12px; opacity: 0.8;">Titip Jual/Sewa di sini, cepat laku!</p></div>
+            <button onclick="openVendorModal()" class="vendor-btn">Titip Jual/Sewa <i class="fas fa-arrow-right"></i></button>
+        </div>
+
+        <div class="buyer-request-banner" onclick="openBuyerModal()">
+            <div class="buyer-icon-circle"><i class="fas fa-search"></i></div>
+            <div class="buyer-text">
+                <strong>Bingung Cari Properti?</strong>
+                <small>Klik di sini, biar saya yang carikan!</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-filter-area" id="filterArea">
+        <div class="search-sort-row">
+            <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" id="searchInput" class="search-input" onkeyup="applyAllFilters()" placeholder="Cari lokasi / nama..."></div>
+            <button onclick="resetAllFilters()" class="btn-reset-filter" title="Reset Filter"><i class="fas fa-sync-alt"></i></button>
+            <div class="sort-box">
+                <select id="sortSelect" class="sort-select" onchange="sortListings()">
+                    <option value="newest">✨ Terbaru</option>
+                    <option value="price-high">💰 Termahal</option>
+                    <option value="price-low">🏷️ Termurah</option>
+                    <option value="oldest">📅 Terlama</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="price-slider-container">
+            <div class="price-label-row">
+                <span id="price-min-label">Rp 0</span>
+                <span id="price-max-label">Rp Max</span>
+            </div>
+            <div id="priceSlider"></div>
+        </div>
+
+        <div class="advanced-filter-row">
+            <div class="sort-box" style="flex: 1; min-width: 100px;">
+                <select id="typeFilter" class="sort-select" onchange="applyAllFilters()" style="font-size: 12px;">
+                    <option value="all">Semua Tipe</option>
+                    <option value="rumah">Rumah</option>
+                    <option value="ruko">Ruko</option>
+                    <option value="apartemen">Apartemen</option>
+                    <option value="tanah">Tanah/Kavling</option>
+                    <option value="gudang">Gudang</option>
+                </select>
+            </div>
+            <div class="sort-box" style="flex: 1; min-width: 80px;">
+                <select id="ktFilter" class="sort-select" onchange="applyAllFilters()" style="font-size: 12px;">
+                    <option value="0">K.Tidur (Semua)</option>
+                    <option value="1">1+ KT</option>
+                    <option value="2">2+ KT</option>
+                    <option value="3">3+ KT</option>
+                    <option value="4">4+ KT</option>
+                    <option value="5">5+ KT</option>
+                </select>
+            </div>
+            <div class="sort-box" style="flex: 1; min-width: 90px;">
+                <select id="suratFilter" class="sort-select" onchange="applyAllFilters()" style="font-size: 12px;">
+                    <option value="all">Sertifikat</option>
+                    <option value="shm">SHM</option>
+                    <option value="hgb">HGB</option>
+                    <option value="ppjb">PPJB</option>
+                </select>
+            </div>
+            <div class="sort-box" style="flex: 1; min-width: 90px;">
+                <select id="furnishFilter" class="sort-select" onchange="applyAllFilters()" style="font-size: 12px;">
+                    <option value="all">Furnish</option>
+                    <option value="full">Full</option>
+                    <option value="semi">Semi</option>
+                    <option value="kosong">Kosong</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-container">
+            <button class="filter-btn active" onclick="clickStatBaru('all')">Semua</button>
+            <button class="filter-btn btn-kirim-fav" onclick="shareFavoritesWA()"><i class="fab fa-whatsapp"></i> Ajukan Fav</button>
+            <button class="filter-btn" onclick="clickStatBaru('fav')">❤️ Disukai</button>
+            <button class="filter-btn" onclick="clickStatBaru('jual')">Dijual</button>
+            <button class="filter-btn" onclick="clickStatBaru('sewa')">Disewa</button>
+            <button class="filter-btn" onclick="clickStatBaru('hot')">🔥 Hot</button>
+        </div>
+    </div>
+
+    <div class="listing-container" id="listingContainer">
+        <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Sedang memuat properti terbaru...</div>
+    </div>
+
+    <div style="padding: 0 15px; margin-bottom: 30px;">
+        <div class="kpr-box">
+            <div class="kpr-tabs">
+                <button class="kpr-tab-btn active" onclick="switchKprTab('cicilan')">Hitung Cicilan</button>
+                <button class="kpr-tab-btn" onclick="switchKprTab('budget')">Hitung Budget</button>
+            </div>
+
+            <div id="tabCicilan" class="kpr-content active">
+                <div class="kpr-header"><i class="fas fa-calculator" style="color: var(--primary-yellow);"></i> Simulasi Cicilan KPR</div>
+                <div class="kpr-form-grid">
+                    <div class="kpr-input-group"><label>Harga Properti (Rp)</label><input type="text" id="kprHarga" value="1.500.000.000" class="kpr-input" onkeyup="formatRupiahInput(this)"></div>
+                    <div class="kpr-input-group"><label>DP (%)</label><input type="number" id="kprDP" value="20" class="kpr-input"></div>
+                    <div class="kpr-input-group"><label>Bunga (%)</label><input type="number" id="kprBunga" value="5" class="kpr-input"></div>
+                    <div class="kpr-input-group"><label>Tenor (Thn)</label><input type="number" id="kprTahun" value="15" class="kpr-input"></div>
+                </div>
+                <button onclick="hitungKPR()" class="btn-calc">Hitung Angsuran</button>
+                <div id="hasilKPR" class="kpr-result-container">
+                    <div class="kpr-row"><span>Pokok Pinjaman:</span><span class="kpr-val-bold" id="outPokok">Rp 0</span></div>
+                    <div class="kpr-row"><span>Estimasi Gaji Min.:</span><span class="kpr-val-bold" id="outGaji">Rp 0</span></div>
+                    <div class="kpr-total-cicilan"><span>Angsuran per Bulan:</span><strong id="outCicilan">Rp 0</strong></div>
+                </div>
+            </div>
+
+            <div id="tabBudget" class="kpr-content">
+                <div class="kpr-header"><i class="fas fa-wallet" style="color: var(--primary-yellow);"></i> Simulasi Budget Kemampuan</div>
+                <div class="form-group" style="margin-bottom:10px;"><label style="font-size:11px; font-weight:600;">Gaji Bulanan (Rp)</label><input type="text" id="budGaji" value="15.000.000" class="kpr-input" onkeyup="formatRupiahInput(this)"></div>
+                <div class="kpr-form-grid">
+                    <div class="kpr-input-group"><label>Max Cicilan dr Gaji (%)</label><input type="number" id="budPersen" value="30" class="kpr-input" placeholder="Standar bank 30%"></div>
+                    <div class="kpr-input-group"><label>DP yg Dimiliki (Rp)</label><input type="text" id="budDP" value="300.000.000" class="kpr-input" onkeyup="formatRupiahInput(this)"></div>
+                    <div class="kpr-input-group"><label>Bunga (%)</label><input type="number" id="budBunga" value="5" class="kpr-input"></div>
+                    <div class="kpr-input-group"><label>Tenor (Thn)</label><input type="number" id="budTahun" value="15" class="kpr-input"></div>
+                </div>
+                <button onclick="hitungBudgetKPR()" class="btn-calc" style="background: var(--primary-yellow); color: black;">Hitung Maksimal Harga</button>
+                <div id="hasilBudget" class="kpr-result-container" style="border-color: var(--primary-yellow);">
+                    <div class="kpr-row"><span>Kemampuan Cicilan:</span><span class="kpr-val-bold" id="outBudCicilan">Rp 0</span> /bulan</div>
+                    <div class="kpr-row"><span>Maksimal Pinjaman Bank:</span><span class="kpr-val-bold" id="outBudPinjaman">Rp 0</span></div>
+                    <div class="kpr-total-cicilan"><span>Harga Properti Maksimal:</span><strong id="outBudMaxHarga" style="color:var(--dark-text)">Rp 0</strong></div>
+                    <p style="font-size:10px; color:#666; text-align:center; margin:5px 0 0 0;">*Estimasi kasar, hubungi bank untuk kepastian.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="testi-section">
+        <div class="testi-header"><i class="fas fa-star" style="color: var(--primary-yellow);"></i> Apa Kata Klien?</div>
+        <div class="testi-scroll">
+            <div class="testi-card"><div class="testi-user"><div class="t-avatar">B</div><div class="t-info"><h4>Bpk. Budi Santoso</h4><div class="t-stars">★★★★★</div></div></div><div class="t-text">"Pak Herman sangat membantu saya mencari ruko di Kelapa Gading. Proses nego cepat. Sukses terus!"</div></div>
+            <div class="testi-card"><div class="testi-user"><div class="t-avatar">S</div><div class="t-info"><h4>Ibu Siska</h4><div class="t-stars">★★★★★</div></div></div><div class="t-text">"Titip jual rumah di Pak Herman langsung laku dalam 2 bulan. Sangat recommended agent!"</div></div>
+        </div>
+    </div>
+
+    <div class="faq-section">
+        <div class="faq-header"><i class="fas fa-question-circle" style="color: var(--primary-yellow);"></i> Pertanyaan Umum</div>
+        <div class="faq-box">
+            <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Apa syarat pengajuan KPR? <i class="fas fa-chevron-down"></i></button><div class="faq-answer">Umumnya: KTP, NPWP, Slip Gaji 3 bulan terakhir, dan Surat Nikah (jika ada).</div></div>
+            <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Berapa biaya selain harga rumah? <i class="fas fa-chevron-down"></i></button><div class="faq-answer">Biaya BPHTB, Notaris, dan Balik Nama.</div></div>
+            <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Bagaimana cara titip jual? <i class="fas fa-chevron-down"></i></button><div class="faq-answer">Klik tombol "Titip Jual/Sewa" di atas dan isi formulir.</div></div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="detail-modal">
+        <div class="detail-header"><button class="back-btn" onclick="closeDetail()"><i class="fas fa-arrow-left"></i></button><button class="back-btn" onclick="shareListing()"><i class="fas fa-share-alt"></i></button></div>
+        <div class="detail-gallery" id="detailGallery"></div>
+        <div class="detail-content">
+            <div class="d-price" id="dPrice">Rp 0</div><div class="d-title" id="dTitle">Judul</div>
+            
+            <div class="location-row">
+                <i class="fas fa-map-marker-alt" style="color: var(--danger-red);"></i> 
+                <span id="dLoc">Lokasi</span>
+                <a href="#" target="_blank" id="btnSmartMap" class="btn-map-pill"><i class="fas fa-map-marked-alt"></i> Lihat Peta</a>
+            </div>
+
+            <div class="specs-grid">
+                <div class="sg-item"><i class="fas fa-bed sg-icon"></i><span class="sg-val" id="dKT">0</span><span class="sg-label">K.Tidur</span></div>
+                <div class="sg-item"><i class="fas fa-bath sg-icon"></i><span class="sg-val" id="dKM">0</span><span class="sg-label">K.Mandi</span></div>
+                <div class="sg-item"><i class="fas fa-expand sg-icon"></i><span class="sg-val" id="dLT">0</span><span class="sg-label">LT</span></div>
+                <div class="sg-item"><i class="fas fa-home sg-icon"></i><span class="sg-val" id="dLB">0</span><span class="sg-label">LB</span></div>
+                <div class="sg-item"><i class="fas fa-layer-group sg-icon"></i><span class="sg-val" id="dLantai">-</span><span class="sg-label">Lantai</span></div>
+                <div class="sg-item"><i class="fas fa-compass sg-icon"></i><span class="sg-val" id="dHadap">-</span><span class="sg-label">Hadap</span></div>
+                <div class="sg-item"><i class="fas fa-bolt sg-icon"></i><span class="sg-val" id="dListrik">-</span><span class="sg-label">Listrik</span></div>
+                <div class="sg-item"><i class="fas fa-file-contract sg-icon"></i><span class="sg-val" id="dSurat">-</span><span class="sg-label">Surat</span></div>
+            </div>
+            <div class="video-box" id="videoBox" style="display:none;"><h3>Video Tour</h3><div class="video-container" id="videoContainer"></div></div>
+            <div class="desc-box"><h3>Deskripsi Properti</h3><div class="desc-text" id="dDesc">Loading...</div></div>
+            <div class="facility-box"><h3>Fasilitas</h3><div class="facility-list" id="dFac"></div></div>
+            
+            <div id="similarSection" style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px; display:none;">
+                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 15px; color: var(--dark-text);">Mungkin Anda Suka</h3>
+                <div class="similar-scroll" id="similarList">
+                    </div>
+            </div>
+
+        </div>
+        <div class="detail-footer"><button class="btn-booking" onclick="openBooking()"><i class="far fa-calendar-alt"></i> Jadwalkan Survey</button><a href="#" id="btnWaDetail" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a></div>
+    </div>
+
+    <div id="bookingModal" class="detail-modal" style="background: rgba(0,0,0,0.5); z-index: 2005; justify-content: flex-end;">
+        <div style="background: white; border-radius: 20px 20px 0 0; padding: 20px; transform: translateY(0); animation: slideUp 0.3s;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3 style="margin:0; font-size:18px;">📅 Pilih Jadwal Survey</h3><button onclick="closeBooking()" style="border:none; background:none; font-size:20px;">×</button></div>
+            <div class="form-group"><label class="form-group label">Tanggal</label><input type="date" id="bookDate" class="form-control" onchange="validateSchedule()"></div>
+            <div class="form-group"><label class="form-group label">Jam</label><select id="bookTime" class="form-control" onchange="validateSchedule()"><option value="">Pilih Jam...</option><option value="09:00">09:00 Pagi</option><option value="10:00">10:00 Pagi</option><option value="11:00">11:00 Pagi</option><option value="13:00">01:00 Siang</option><option value="14:00">02:00 Siang</option><option value="16:00">04:00 Sore</option></select><div id="scheduleError" class="error-msg"><i class="fas fa-exclamation-circle"></i> Jadwal ini sudah terisi. Pilih waktu lain.</div></div>
+            <div class="form-group"><label class="form-group label">Nama Anda</label><input type="text" id="bookName" class="form-control" placeholder="Nama Lengkap"></div>
+            <button id="btnSendBooking" onclick="sendBookingWA()" class="btn-submit-wa">Kirim Jadwal via WA</button>
+        </div>
+    </div>
+
+    <div id="calendarModal" class="detail-modal calendar-bg">
+        <div class="detail-header">
+            <button class="back-btn" onclick="closeCalendar()" style="background: rgba(255,255,255,0.3); color: #333;"><i class="fas fa-arrow-left"></i></button>
+            <div class="calendar-header-title">Event Calendar</div>
+            <div style="width:35px;"></div> </div>
+        <div class="calendar-content" id="calendarList">
+            <div style="text-align:center; color:white; margin-top:50px;">Memuat jadwal...</div>
+        </div>
+    </div>
+
+    <div id="vendorModal" class="detail-modal" style="background: #f8f9fa;">
+        <div class="detail-header"><button class="back-btn" onclick="closeVendorModal()"><i class="fas fa-arrow-left"></i></button></div>
+        <div class="vendor-content">
+            <div class="vendor-title">Form Titip Listing</div>
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                <div class="form-divider"><span>Data Pemilik</span></div>
+                <div class="form-group"><label>Nama Lengkap</label><input type="text" id="vNama" class="form-control" placeholder="Nama Anda"></div>
+                <div class="form-group"><label>Nomor HP/WA</label><input type="text" id="vPhone" class="form-control" placeholder="08xx-xxxx-xxxx"></div>
+                <div class="form-divider"><span>Data Dasar</span></div>
+                <div class="form-row-2"><div class="form-group"><label>Status</label><select id="vStatus" class="form-control"><option value="DIJUAL">DIJUAL</option><option value="DISEWA">DISEWA</option></select></div><div class="form-group"><label>Jenis</label><select id="vJenis" class="form-control"><option>Rumah</option><option>Ruko</option><option>Apartemen</option><option>Kavling</option></select></div></div>
+                <div class="form-group"><label>Alamat / Lokasi</label><input type="text" id="vLokasi" class="form-control" placeholder="Nama Cluster / Jalan / Area"></div>
+                <div class="form-divider"><span>Spesifikasi</span></div>
+                <div class="form-row-2"><div class="form-group"><label>Luas Tanah (m²)</label><input type="text" id="vLT" class="form-control" placeholder="120"></div><div class="form-group"><label>Luas Bangunan (m²)</label><input type="text" id="vLB" class="form-control" placeholder="200"></div></div>
+                <div class="form-row-2"><div class="form-group"><label>K. Tidur</label><input type="text" id="vKT" class="form-control" placeholder="3+1"></div><div class="form-group"><label>K. Mandi</label><input type="text" id="vKM" class="form-control" placeholder="2"></div></div>
+                <div class="form-row-2"><div class="form-group"><label>Jml Lantai</label><input type="text" id="vLantai" class="form-control" placeholder="2"></div><div class="form-group"><label>Hadap</label><select id="vHadap" class="form-control"><option>-</option><option>Utara</option><option>Selatan</option><option>Timur</option><option>Barat</option></select></div></div>
+                <div class="form-divider"><span>Kondisi & Legalitas</span></div>
+                <div class="form-row-2"><div class="form-group"><label>Listrik (Watt)</label><input type="text" id="vListrik" class="form-control" placeholder="2200"></div><div class="form-group"><label>Sertifikat</label><select id="vSurat" class="form-control"><option>SHM</option><option>HGB</option><option>PPJB</option></select></div></div>
+                <div class="form-group"><label>Kondisi Furnish</label><select id="vFurnish" class="form-control"><option>Unfurnished (Kosong)</option><option>Semi Furnished</option><option>Full Furnished</option></select></div>
+                <div class="form-divider"><span>Harga Penawaran</span></div>
+                <div class="form-group"><label>Harga Permintaan (Rp)</label><input type="text" id="vHarga" class="form-control" placeholder="Contoh: 3.500.000.000" onkeyup="formatRupiahInput(this)"></div>
+                <button onclick="sendVendorWA()" class="btn-submit-wa"><i class="fab fa-whatsapp"></i> Kirim Data Lengkap</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="buyerModal" class="detail-modal" style="background: #f0f4f8;">
+        <div class="detail-header"><button class="back-btn" onclick="closeBuyerModal()"><i class="fas fa-arrow-left"></i></button></div>
+        <div class="vendor-content">
+            <div class="vendor-title" style="color:#007bff;">Bantu Saya Cari Properti</div>
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                <p style="font-size:12px; color:#666; margin-bottom:15px;">Isi kriteria properti yang Anda cari. Saya akan carikan listing terbaik (termasuk barang "bawah tangan").</p>
+                
+                <div class="form-group"><label>Nama Anda</label><input type="text" id="bNama" class="form-control" placeholder="Nama Lengkap"></div>
+                <div class="form-group"><label>Budget (Kisaran)</label><input type="text" id="bBudget" class="form-control" placeholder="Contoh: 2M - 3M" onkeyup="formatRupiahInput(this)"></div>
+                
+                <div class="form-row-2">
+                    <div class="form-group"><label>Area/Lokasi</label><input type="text" id="bArea" class="form-control" placeholder="Misal: PIK / Sunter"></div>
+                    <div class="form-group"><label>Jenis</label><select id="bJenis" class="form-control"><option>Rumah</option><option>Ruko</option><option>Apartemen</option><option>Gudang</option><option>Kavling</option></select></div>
+                </div>
+
+                <div class="form-group"><label>Kebutuhan Khusus (Opsional)</label><textarea id="bCatatan" class="form-control" rows="3" placeholder="Contoh: Butuh dekat sekolah, hadap utara, atau untuk investasi." style="resize:none; border:1px solid #ddd; border-radius:8px; padding:10px; font-family:inherit; font-size:13px; width:100%;"></textarea></div>
+                
+                <button onclick="sendBuyerWA()" class="btn-submit-wa" style="background: #007bff; box-shadow: 0 5px 15px rgba(0,123,255,0.3);">
+                    <i class="fab fa-whatsapp"></i> Carikan Saya Properti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox()">
+        <div class="lightbox-content-wrapper" onclick="event.stopPropagation()">
+            <button class="lightbox-close-btn" onclick="closeLightbox()">×</button>
+            <img id="lightboxImage" src="" class="lightbox-img">
+            <div class="lightbox-hint">Klik di luar foto untuk menutup</div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIG
+        // ==========================================
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRe3VFGrOlUrlW0k544nnHVdxWOn3I_C9AAgTMHZn0mGCdCtgFrGTTKeAh5ZaRn5a2ziGPT-FnT_zxX/pub?gid=189046656&single=true&output=csv'; 
+        const BOOKING_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSitQOce7sAeiKR14TCjDpFimOkWHpplVJSm2RcTYLlZwxCTpw-Fuu0z64iL8E27S2AV-37IqYP4A6w/pub?gid=189046656&single=true&output=csv'; 
+        
+        let properties = []; 
+        let bookings = [];
+        let currentPropId = "";
+        let minPriceSliderVal = 0;
+        let maxPriceSliderVal = Infinity;
+
+        // ==========================================
+        // INIT
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', function() {
+            // INIT SLIDER
+            var priceSlider = document.getElementById('priceSlider');
+            noUiSlider.create(priceSlider, {
+                start: [0, 10000000000], 
+                connect: true,
+                range: { 'min': 0, 'max': 10000000000 },
+                step: 100000000,
+                format: { to: function (v) { return Math.round(v); }, from: function (v) { return Number(v); } }
+            });
+
+            var minLabel = document.getElementById('price-min-label');
+            var maxLabel = document.getElementById('price-max-label');
+            const fmtShort = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: "compact", maximumFractionDigits: 1 });
+
+            priceSlider.noUiSlider.on('update', function (values) {
+                minPriceSliderVal = parseFloat(values[0]);
+                maxPriceSliderVal = parseFloat(values[1]);
+                minLabel.innerHTML = fmtShort.format(minPriceSliderVal);
+                maxLabel.innerHTML = fmtShort.format(maxPriceSliderVal);
+                applyAllFilters();
+            });
+
+            // LOAD PROPERTI
+            Papa.parse(SHEET_URL, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    properties = results.data; 
+                    renderListings(properties); 
+                    updateStats(); 
+                    applyAllFilters(); 
+                    if(window.location.hash) {
+                        setTimeout(() => { openDetail(window.location.hash.substring(1)); }, 500);
+                    }
+                },
+                error: function() {
+                    document.getElementById('listingContainer').innerHTML = "<p style='text-align:center; padding:20px; grid-column:span 2;'>Gagal memuat data properti.</p>";
+                }
+            });
+
+            // LOAD BOOKING
+            Papa.parse(BOOKING_SHEET, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    bookings = results.data;
+                    renderCalendarEvents();
+                },
+                error: function() { console.log("Gagal memuat booking"); }
+            });
+        });
+
+        // ==========================================
+        // RENDER & DETAIL
+        // ==========================================
+        function renderListings(data) {
+            const container = document.getElementById('listingContainer');
+            container.innerHTML = ""; 
+
+            if(!data || data.length === 0) {
+                container.innerHTML = "<div class='no-result' style='display:block'>Belum ada data properti.</div>";
+                return;
+            }
+
+            let favs = JSON.parse(localStorage.getItem('myFavs')) || [];
+
+            data.forEach(prop => {
+                let firstImg = prop.images ? prop.images.split(';')[0] : 'https://placehold.co/400x300?text=No+Image';
+                let isHot = prop.category && prop.category.toLowerCase().includes('hot');
+                let isFav = favs.includes(prop.id);
+                
+                // --- LOGIKA BARU: BADGE NEW ---
+                let isNew = isNewListing(prop.date);
+                let newBadgeHtml = isNew ? '<span class="status-tag baru">✨ BARU</span>' : '';
+                // ------------------------------
+
+                let statusClass = prop.status ? prop.status.toLowerCase() : ''; 
+                let propType = prop.type ? prop.type.toLowerCase().trim() : 'other';
+                let ktValue = parseInt(prop.kt) || 0;
+                let badgeHtml = isHot ? '<span class="hot-deal-badge">Hot Deal</span>' : '';
+                
+                let cardClasses = `property-card ${statusClass} ${propType} ${isHot ? 'hot' : ''} ${isFav ? 'fav' : ''}`;
+
+                let html = `
+                <div class="${cardClasses}" id="card-${prop.id}" onclick="openDetail('${prop.id}')" 
+                     data-name="${prop.title.toLowerCase()}" 
+                     data-loc="${prop.location.toLowerCase()}" 
+                     data-price-val="${prop.price_value}" 
+                     data-date="${prop.date}"
+                     data-type="${propType}" 
+                     data-kt="${ktValue}"> 
+                    <div class="card-image-wrapper">
+                        <div class="badge-top-left">
+                            <span class="status-tag ${statusClass}">${prop.status}</span>
+                            ${newBadgeHtml}
+                            ${badgeHtml}
+                        </div>
+                        <button class="btn-wishlist ${isFav ? 'active' : ''}" onclick="toggleLike(event, '${prop.id}')"><i class="fas fa-heart"></i></button>
+                        <img src="${firstImg}" class="card-img" loading="lazy" onerror="this.src='https://placehold.co/400x300?text=Image+Error'">
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            <div class="price-tag">${prop.price_display}</div>
+                            <div class="prop-name">${prop.title}</div>
+                            <div class="location-row"><i class="fas fa-map-marker-alt"></i> ${prop.location}</div>
+                            <div class="specs-row">
+                                <span class="spec-item"><i class="fas fa-bed"></i> ${prop.kt}</span>
+                                <span class="spec-item"><i class="fas fa-bath"></i> ${prop.km}</span>
+                                <span class="spec-item"><i class="fas fa-expand"></i> ${prop.lt}</span>
+                            </div>
+                        </div>
+                        <div class="card-btn">Lihat Detail</div>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function openDetail(id) {
+            const data = properties.find(p => p.id === id);
+            if(!data) return;
+            currentPropId = id;
+            
+            document.getElementById('dTitle').textContent = data.title;
+            document.getElementById('dPrice').textContent = data.price_display;
+            document.getElementById('dLoc').textContent = data.location;
+            document.getElementById('dKT').textContent = data.kt || '-';
+            document.getElementById('dKM').textContent = data.km || '-';
+            document.getElementById('dLT').textContent = data.lt || '-';
+            document.getElementById('dLB').textContent = data.lb || '-';
+            document.getElementById('dLantai').textContent = data.lantai || '-';
+            document.getElementById('dHadap').textContent = data.hadap || '-';
+            document.getElementById('dListrik').textContent = data.listrik || '-';
+            document.getElementById('dSurat').textContent = data.surat || '-';
+            document.getElementById('dDesc').textContent = data.desc || 'Tidak ada deskripsi.';
+            
+            // FEATURE: SMART MAP BUTTON
+            let mapQuery = encodeURIComponent(data.location + " Jakarta Utara");
+            document.getElementById('btnSmartMap').href = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+
+            // Render Rekomendasi Serupa
+            renderSimilarProperties(data);
+
+            let waText = `Halo Pak Herman, saya tertarik dengan properti ini: ${data.title} (${data.price_display})`;
+            document.getElementById('btnWaDetail').href = `https://wa.me/6285760035568?text=${encodeURIComponent(waText)}`;
+            
+            const gallery = document.getElementById('detailGallery');
+            gallery.innerHTML = "";
+            if(data.images) {
+                let imgs = data.images.split(';');
+                imgs.forEach(url => { 
+                    if(url.trim() !== "") {
+                        // FEATURE: LIGHTBOX ON CLICK
+                        gallery.innerHTML += `<img src="${url.trim()}" class="gallery-img" onclick="openLightbox(this.src)" style="cursor:zoom-in;">`; 
+                    }
+                });
+            }
+            
+            const facList = document.getElementById('dFac');
+            facList.innerHTML = "";
+            if(data.facilities) {
+                let facs = data.facilities.split(';');
+                facs.forEach(f => { if(f.trim() !== "") facList.innerHTML += `<div class="fac-item"><i class="fas fa-check-circle"></i> ${f.trim()}</div>`; });
+            }
+            
+            const vidBox = document.getElementById('videoBox'); 
+            const vidContainer = document.getElementById('videoContainer');
+            if(data.video && data.video.includes("http")) { 
+                vidBox.style.display = 'block'; 
+                vidContainer.innerHTML = `<iframe src="${data.video}" frameborder="0" allowfullscreen></iframe>`; 
+            } else { 
+                vidBox.style.display = 'none'; 
+                vidContainer.innerHTML = ""; 
+            }
+            document.getElementById('detailModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            history.pushState(null, null, `#${id}`);
+        }
+
+        function renderSimilarProperties(currentProp) {
+            let container = document.getElementById('similarList');
+            let section = document.getElementById('similarSection');
+            container.innerHTML = "";
+
+            let similar = properties.filter(p => {
+                if(p.id === currentProp.id) return false; 
+                if(p.status.toLowerCase() !== currentProp.status.toLowerCase()) return false;
+                
+                let pPrice = parseFloat(p.price_value);
+                let cPrice = parseFloat(currentProp.price_value);
+                let isPriceSimilar = (pPrice >= cPrice * 0.7) && (pPrice <= cPrice * 1.3);
+                let isTypeSame = (p.type || '').toLowerCase() === (currentProp.type || '').toLowerCase();
+
+                return isTypeSame || isPriceSimilar;
+            }).slice(0, 4); 
+
+            if(similar.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            section.style.display = 'block';
+
+            similar.forEach(p => {
+                let img = p.images ? p.images.split(';')[0] : 'https://placehold.co/100x100';
+                let html = `
+                <div class="similar-card" onclick="openDetail('${p.id}')">
+                    <img src="${img}" class="similar-img" onerror="this.src='https://placehold.co/100x100'">
+                    <div class="similar-body">
+                        <div class="similar-price">${p.price_display}</div>
+                        <div class="similar-title">${p.title}</div>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.remove('active');
+            document.body.style.overflow = 'auto'; 
+            document.getElementById('videoContainer').innerHTML = ""; 
+            history.pushState(null, null, ' ');
+        }
+
+        // ==========================================
+        // BOOKING, CALENDAR, VENDOR, BUYER REQUEST
+        // ==========================================
+        function openBooking() { document.getElementById('bookingModal').classList.add('active'); }
+        function closeBooking() { document.getElementById('bookingModal').classList.remove('active'); }
+        function validateSchedule() {
+            let dateVal = document.getElementById('bookDate').value;
+            let timeVal = document.getElementById('bookTime').value;
+            let btn = document.getElementById('btnSendBooking');
+            if(!dateVal || !timeVal) return;
+            let isTaken = bookings.some(b => b.date === dateVal && b.time === timeVal);
+            if(isTaken) { document.getElementById('scheduleError').style.display = 'block'; btn.disabled = true; btn.style.opacity = '0.5'; btn.innerHTML = "Jadwal Penuh"; } 
+            else { document.getElementById('scheduleError').style.display = 'none'; btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = "Kirim Jadwal via WA"; }
+        }
+        function sendBookingWA() {
+            let date = document.getElementById('bookDate').value;
+            let time = document.getElementById('bookTime').value;
+            let name = document.getElementById('bookName').value;
+            let prop = properties.find(p => p.id === currentPropId);
+            if(!date || !time || !name) { alert("Lengkapi data!"); return; }
+            let msg = `Halo Pak Herman, saya ingin BOOKING JADWAL SURVEY.%0A%0A🏠 Properti: ${prop.title}%0A📅 Tanggal: ${date}%0A⏰ Jam: ${time}%0A👤 Nama: ${name}%0A%0AMohon dikonfirmasi.`;
+            window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); closeBooking();
+        }
+        function openCalendar() { document.getElementById('calendarModal').classList.add('active'); }
+        function closeCalendar() { document.getElementById('calendarModal').classList.remove('active'); }
+        function renderCalendarEvents() {
+            const container = document.getElementById('calendarList');
+            container.innerHTML = "";
+            bookings.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+            let upcoming = bookings.filter(b => new Date(b.date) >= new Date().setHours(0,0,0,0));
+            if(upcoming.length === 0) { container.innerHTML = "<div style='text-align:center; color:white; margin-top:50px;'>Belum ada jadwal mendatang.</div>"; return; }
+            upcoming.forEach(evt => {
+                let d = new Date(evt.date);
+                let type = evt.type ? evt.type.toLowerCase() : 'umum';
+                let html = `<div class="calendar-card" style="border-left-color: ${type === 'internal' ? '#FFCC00' : '#007bff'}"><div class="cc-left"><span class="cc-date">${d.getDate()}</span><span class="cc-month">${d.toLocaleString('default', { month: 'short' })}</span></div><div class="cc-right"><div class="cc-badge ${type}">${evt.type || 'Meeting'}</div><div class="cc-title">${evt.title}</div><div class="cc-time"><i class="far fa-clock"></i> ${evt.time} WIB</div></div></div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+        function toggleFaq(btn) { btn.parentElement.classList.toggle('active'); }
+        function toggleLike(event, id) { 
+            event.stopPropagation(); 
+            const btn = event.currentTarget; 
+            const card = document.getElementById('card-' + id); 
+            let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
+            if (favorites.includes(id)) { favorites = favorites.filter(fav => fav !== id); btn.classList.remove('active'); if(card) card.classList.remove('fav'); } 
+            else { favorites.push(id); btn.classList.add('active'); if(card) card.classList.add('fav'); } 
+            localStorage.setItem('myFavs', JSON.stringify(favorites)); 
+            let activeBtn = document.querySelector(".filter-btn.active");
+            if(activeBtn && activeBtn.textContent.includes("Disukai")) applyAllFilters();
+        }
+        
+        // UPDATE: NATIVE SHARE
+        function shareListing() {
+            const data = properties.find(p => p.id === currentPropId);
+            if(!data) return;
+            
+            let url = window.location.origin + window.location.pathname + "#" + currentPropId;
+            let shareData = {
+                title: 'Herman Kosasi Property',
+                text: `Cek properti ini: ${data.title} (${data.price_display})\nLokasi: ${data.location}\n`,
+                url: url
+            };
+
+            if (navigator.share) {
+                navigator.share(shareData).catch((err) => console.log('Error sharing:', err));
+            } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text + " " + url)}`, '_blank');
+            }
+        }
+
+        function openVendorModal() { document.getElementById('vendorModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeVendorModal() { document.getElementById('vendorModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
+        function sendVendorWA() { /* simplified */ let v = id => document.getElementById(id).value; if(v('vNama')===""||v('vLokasi')===""||v('vHarga')==="") { alert("Nama, Lokasi, Harga wajib!"); return; } window.open(`https://wa.me/6285760035568?text=Halo Pak Herman, titip properti:%0A${v('vNama')}%0A${v('vLokasi')}%0A${v('vHarga')}`, '_blank'); }
+        
+        // LOGIKA FITUR: BUYER REQUEST
+        function openBuyerModal() { document.getElementById('buyerModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeBuyerModal() { document.getElementById('buyerModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
+        function sendBuyerWA() {
+            let nama = document.getElementById('bNama').value;
+            let budget = document.getElementById('bBudget').value;
+            let area = document.getElementById('bArea').value;
+            let jenis = document.getElementById('bJenis').value;
+            let catatan = document.getElementById('bCatatan').value;
+
+            if(!nama || !area) { alert("Mohon isi Nama dan Area yang dicari."); return; }
+
+            let msg = `Halo Pak Herman, tolong *CARIKAN PROPERTI* dengan kriteria:%0A%0A👤 Nama: ${nama}%0A💰 Budget: ${budget}%0A📍 Area: ${area}%0A🏠 Jenis: ${jenis}%0A📝 Catatan: ${catatan}`;
+            
+            window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank');
+            closeBuyerModal();
+        }
+
+        // LOGIKA FITUR: SHARE FAVORIT KE WA
+        function shareFavoritesWA() {
+            let favs = JSON.parse(localStorage.getItem('myFavs')) || [];
+            if (favs.length === 0) {
+                alert("Anda belum menandai properti favorit (klik ikon hati ❤️).");
+                return;
+            }
+
+            let message = "Halo Pak Herman, saya tertarik survey untuk properti favorit saya ini:%0A%0A";
+            let count = 0;
+
+            favs.forEach((id, index) => {
+                let prop = properties.find(p => p.id === id);
+                if (prop) {
+                    count++;
+                    message += `${count}. *${prop.title}*%0A   Harga: ${prop.price_display}%0A   Link: ${window.location.origin + window.location.pathname}#${prop.id}%0A%0A`;
+                }
+            });
+
+            message += "Mohon infonya kapan bisa survey lokasi. Terima kasih.";
+            
+            if(count === 0) {
+                alert("Data properti favorit tidak ditemukan (mungkin sudah terjual).");
+            } else {
+                window.open(`https://wa.me/6285760035568?text=${message}`, '_blank');
+            }
+        }
+
+        // LOGIKA FITUR: LIGHTBOX & SMART BADGE
+        function openLightbox(src) {
+            document.getElementById('lightboxImage').src = src;
+            document.getElementById('lightboxModal').classList.add('active');
+        }
+        function closeLightbox() {
+            document.getElementById('lightboxModal').classList.remove('active');
+        }
+        function isNewListing(dateString) {
+            if(!dateString) return false;
+            const itemDate = new Date(dateString);
+            const today = new Date();
+            const diffTime = Math.abs(today - itemDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            return diffDays <= 7; 
+        }
+
+
+        // KPR LOGIC
+        function switchKprTab(t) {
+            document.querySelectorAll('.kpr-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.kpr-content').forEach(c => c.classList.remove('active'));
+            if(t === 'cicilan') { document.querySelectorAll('.kpr-tab-btn')[0].classList.add('active'); document.getElementById('tabCicilan').classList.add('active'); }
+            else { document.querySelectorAll('.kpr-tab-btn')[1].classList.add('active'); document.getElementById('tabBudget').classList.add('active'); }
+        }
+        function formatRupiahInput(a) { 
+            let val = a.value.replace(/[^,\d]/g, '').toString(), split = val.split(','), sisa = split[0].length % 3, rupiah = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+            if (ribuan) { rupiah += (sisa ? '.' : '') + ribuan.join('.'); } a.value = rupiah;
+        }
+        function hitungKPR() { 
+            let h = parseFloat(document.getElementById('kprHarga').value.replace(/\./g, '')), dp = parseFloat(document.getElementById('kprDP').value), b = parseFloat(document.getElementById('kprBunga').value), t = parseFloat(document.getElementById('kprTahun').value);
+            if(isNaN(h)) { alert("Isi harga!"); return; }
+            let pokok = h * (1 - dp/100), bb = (b/100)/12, bln = t*12, cicil = pokok * (bb / (1 - Math.pow(1+bb, -bln))), gaji = cicil/0.3;
+            const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+            document.getElementById('outPokok').innerText = fmt.format(pokok); document.getElementById('outCicilan').innerText = fmt.format(cicil); document.getElementById('outGaji').innerText = fmt.format(gaji); document.getElementById('hasilKPR').style.display = 'block';
+        }
+        function hitungBudgetKPR() {
+            let g = parseFloat(document.getElementById('budGaji').value.replace(/\./g, '')), p = parseFloat(document.getElementById('budPersen').value), dp = parseFloat(document.getElementById('budDP').value.replace(/\./g, '')), b = parseFloat(document.getElementById('budBunga').value), t = parseFloat(document.getElementById('budTahun').value);
+            if(isNaN(g)) return;
+            let maxC = g * (p/100), bb = (b/100)/12, bln = t*12, maxPinjam = maxC * ((1 - Math.pow(1+bb, -bln))/bb), maxH = maxPinjam + dp;
+            const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+            document.getElementById('outBudCicilan').innerText = fmt.format(maxC); document.getElementById('outBudPinjaman').innerText = fmt.format(maxPinjam); document.getElementById('outBudMaxHarga').innerText = fmt.format(maxH); document.getElementById('hasilBudget').style.display = 'block';
+        }
+
+        // FILTER & SORT
+        function updateStats() { 
+            if(properties.length > 0) {
+                document.getElementById('countAll').innerText = properties.length; 
+                document.getElementById('countJual').innerText = properties.filter(p => p.status.toLowerCase() === 'jual').length; 
+                document.getElementById('countSewa').innerText = properties.filter(p => p.status.toLowerCase() === 'sewa').length; 
+            }
+        }
+
+        function resetAllFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = 'all';
+            document.getElementById('ktFilter').value = '0';
+            document.getElementById('suratFilter').value = 'all';
+            document.getElementById('furnishFilter').value = 'all';
+            document.getElementById('sortSelect').value = 'newest';
+            var slider = document.getElementById('priceSlider');
+            slider.noUiSlider.reset();
+            clickStatBaru('all'); 
+        }
+
+        function clickStatBaru(cat) {
+            let btns = document.getElementsByClassName("filter-btn");
+            for (let i = 0; i < btns.length; i++) {
+                btns[i].classList.remove("active");
+                let txt = btns[i].textContent.toLowerCase();
+                if( (cat === 'all' && txt === 'semua') || (cat === 'fav' && txt.includes('disukai')) || (cat === 'jual' && txt.includes('dijual')) || (cat === 'sewa' && txt.includes('disewa')) || (cat === 'hot' && txt.includes('hot')) ) btns[i].classList.add("active");
+            }
+            document.getElementById('filterArea').scrollIntoView({ behavior: 'smooth' });
+            applyAllFilters();
+        }
+        
+        function applyAllFilters() {
+            let txt = document.getElementById("searchInput").value.toLowerCase();
+            let activeBtn = document.querySelector(".filter-btn.active");
+            
+            // Kategori Tombol (Jual/Sewa/Hot/Fav)
+            let cat = "all";
+            if (activeBtn) { 
+                let t = activeBtn.textContent.toLowerCase(); 
+                if (t.includes("dijual")) cat="jual"; 
+                else if (t.includes("disewa")) cat="sewa"; 
+                else if (t.includes("hot")) cat="hot"; 
+                else if (t.includes("disukai")) cat="fav"; 
+            }
+
+            let minP = minPriceSliderVal, maxP = maxPriceSliderVal;
+            let selType = document.getElementById("typeFilter").value;
+            let minKT = parseInt(document.getElementById("ktFilter").value) || 0;
+            let selSurat = document.getElementById("suratFilter").value; 
+            let selFurnish = document.getElementById("furnishFilter").value; 
+
+            let cards = document.getElementsByClassName("property-card"), found = 0;
+
+            for (let i = 0; i < cards.length; i++) {
+                let c = cards[i], show = true;
+                
+                if (cat !== "all" && !c.classList.contains(cat)) show = false;
+                
+                if (show) { 
+                    let n = c.getAttribute("data-name"), l = c.getAttribute("data-loc"); 
+                    if (!n.includes(txt) && !l.includes(txt)) show = false; 
+                }
+                
+                if (show) { 
+                    let p = parseFloat(c.getAttribute('data-price-val')) || 0; 
+                    if (p < minP || p > maxP) show = false; 
+                }
+                
+                if (show) { 
+                    let t = c.getAttribute('data-type'); 
+                    if (selType !== 'all' && t !== selType) show = false; 
+                }
+                
+                if (show) { 
+                    let k = parseInt(c.getAttribute('data-kt')) || 0; 
+                    if (k < minKT) show = false; 
+                }
+
+                // UPDATE: FILTER SERTIFIKAT & FURNISH
+                let pid = c.id.replace('card-', '');
+                let pData = properties.find(p => p.id === pid);
+
+                if (show && selSurat !== 'all' && pData) {
+                    let s = (pData.surat || '').toLowerCase();
+                    if(!s.includes(selSurat)) show = false;
+                }
+
+                if (show && selFurnish !== 'all' && pData) {
+                    let desc = (pData.desc || '').toLowerCase() + " " + (pData.title || '').toLowerCase();
+                    let match = false;
+                    if(selFurnish === 'full' && (desc.includes('full') || desc.includes('lengkap'))) match = true;
+                    else if(selFurnish === 'semi' && desc.includes('semi')) match = true;
+                    else if(selFurnish === 'kosong' && (desc.includes('kosong') || desc.includes('unfurnish'))) match = true;
+                    
+                    if(!match) show = false; 
+                }
+
+                if (show) { c.style.display = "flex"; found++; } else { c.style.display = "none"; }
+            }
+            let nr = document.querySelector('.no-result');
+            if(nr) nr.style.display = (found === 0) ? 'block' : 'none';
+        }
+
+        function sortListings() {
+            let container = document.getElementById('listingContainer'), cards = Array.from(document.getElementsByClassName('property-card')), type = document.getElementById('sortSelect').value;
+            cards.sort((a, b) => {
+                let pA = parseFloat(a.getAttribute('data-price-val'))||0, pB = parseFloat(b.getAttribute('data-price-val'))||0, dA = new Date(a.getAttribute('data-date')), dB = new Date(b.getAttribute('data-date'));
+                if (type === 'price-high') return pB - pA; if (type === 'price-low') return pA - pB; if (type === 'newest') return dB - dA; if (type === 'oldest') return dA - dB; return 0;
+            });
+            cards.forEach(c => container.appendChild(c));
+        }
+    </script>
+</body>
+</html>
