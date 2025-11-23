@@ -801,7 +801,7 @@
         // ==========================================
         // CONFIG
         // ==========================================
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRe3VFGrOlUrlW0k544nnHVdxWOn3I_C9AAgTMHZn0mGCdCtgFrGTTKeAh5ZaRn5a2ziGPT-FnT_zxX/pub?gid=189046656&single=true&output=csv'; 
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1EH8l-31G-Nt6DGY_rnmIKGn2txmLNOcuSotTsf7D-Ng/edit?gid=93479434#gid=93479434/pub?gid=189046656&single=true&output=csv'; 
         const BOOKING_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSitQOce7sAeiKR14TCjDpFimOkWHpplVJSm2RcTYLlZwxCTpw-Fuu0z64iL8E27S2AV-37IqYP4A6w/pub?gid=189046656&single=true&output=csv'; 
         
         let properties = []; 
@@ -819,9 +819,9 @@
             // INIT SLIDER
             var priceSlider = document.getElementById('priceSlider');
             noUiSlider.create(priceSlider, {
-                start: [0, 10000000000], 
+                start: [0, 100000000000], 
                 connect: true,
-                range: { 'min': 0, 'max': 10000000000 },
+                range: { 'min': 0, 'max': 100000000000 },
                 step: 100000000,
                 format: { to: function (v) { return Math.round(v); }, from: function (v) { return Number(v); } }
             });
