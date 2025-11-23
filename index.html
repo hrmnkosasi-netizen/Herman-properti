@@ -695,9 +695,9 @@
             // INIT SLIDER
             var priceSlider = document.getElementById('priceSlider');
             noUiSlider.create(priceSlider, {
-                start: [0, 10000000000], 
+                start: [0, 100000000000], 
                 connect: true,
-                range: { 'min': 0, 'max': 10000000000 },
+                range: { 'min': 0, 'max': 100000000000 },
                 step: 100000000,
                 format: { to: function (v) { return Math.round(v); }, from: function (v) { return Number(v); } }
             });
