@@ -1744,22 +1744,20 @@
       </a>
     </div>
 
-    
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 
 <script>
   // ==========================================
-  // 1. CONFIG SUPABASE (PASTIKAN URL & KEY INI BENAR)
+  // CONFIG SUPABASE
   // ==========================================
   const SUPABASE_URL = 'https://mpoebxljgdxrogzqscmh.supabase.co'; 
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wb2VieGxqZ2R4cm9nenFzY21oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMTIwNTAsImV4cCI6MjA3OTU4ODA1MH0.tIZ0LZtzOXBolwHDsRv6hKRziLO8XrewerM71m-97UQ';
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // STATE VARIABLES
   let properties = [];
   let bookings = []; 
   let currentPropId = "";
@@ -1769,20 +1767,15 @@
   let currentView = 'home'; 
 
   // ==========================================
-  // 2. INITIALIZATION
+  // INIT
   // ==========================================
   window.addEventListener('DOMContentLoaded', async function() {
-      // Setup Slider Harga
       var priceSlider = document.getElementById('priceSlider');
       noUiSlider.create(priceSlider, {
-          start: [0, 50000000000],
-          connect: true,
-          range: { 'min': 0, 'max': 50000000000 },
-          step: 100000000,
-          format: { to: function (v) { return Math.round(v); }, from: function (v) { return Number(v); } }
+          start: [0, 50000000000], connect: true, range: { 'min': 0, 'max': 50000000000 },
+          step: 100000000, format: { to: v => Math.round(v), from: v => Number(v) }
       });
 
-      // Listener Slider
       var minLabel = document.getElementById('price-min-label');
       var maxLabel = document.getElementById('price-max-label');
       const fmtShort = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: "compact", maximumFractionDigits: 1 });
@@ -1792,274 +1785,227 @@
           maxPriceSliderVal = parseFloat(values[1]);
           minLabel.innerHTML = fmtShort.format(minPriceSliderVal);
           maxLabel.innerHTML = fmtShort.format(maxPriceSliderVal);
-          applyAllFilters(); // Filter otomatis jalan saat slider digeser
+          applyAllFilters();
       });
 
-      // START: Ambil data dari Database
       await fetchProperties();
-      await fetchBookings(); // Coba ambil data booking jika tabel ada
   });
 
   // ==========================================
-  // 3. FUNGSI FETCH DATA (DATABASE)
+  // FETCH DATA (DENGAN PEMBERSIH NULL)
   // ==========================================
   async function fetchProperties() {
       const container = document.getElementById('listingContainer');
       
-      // Ambil data dari tabel 'properties'
       let { data, error } = await supabase.from('properties').select('*');
 
       if (error) {
-          console.error("Error fetch properties:", error);
-          container.innerHTML = "<div style='text-align:center; padding:40px; color:#999;'>Gagal memuat data. Periksa koneksi atau konfigurasi database.</div>";
+          console.error("Error:", error);
+          container.innerHTML = "<div style='text-align:center; padding:20px;'>Gagal memuat data database.</div>";
           return;
       }
 
-      // PENTING: Sanitasi Tipe Data (Agar Filter & Sort Berjalan)
-      // Kita memaksa price_value menjadi Number, karena kadang dari CSV jadi String
+      // --- PENTING: BERSIHKAN DATA DARI NULL & SPASI ---
       properties = data.map(item => ({
           ...item,
+          id: item.id ? String(item.id).trim() : "", // Bersihkan spasi di ID
+          title: item.title || "Tanpa Judul",
+          location: item.location || "-",
+          // Ubah NULL jadi 0 agar tidak error hitung
           price_value: Number(item.price_value) || 0,
+          price_old: Number(item.price_old) || 0, 
           kt: Number(item.kt) || 0,
           km: Number(item.km) || 0,
           lt: Number(item.lt) || 0,
           lb: Number(item.lb) || 0
       }));
 
-      // Render Listing Awal
       renderListings(properties, 'listingContainer');
       updateStats();
       renderHistory();
 
-      // Cek apakah URL mengandung Hash (misal #123) UNTUK MEMBUKA DETAIL LANGSUNG
+      // Auto open dari link WA/Share
       if(window.location.hash) {
           let id = window.location.hash.substring(1);
-          // Kita delay sedikit untuk memastikan DOM siap
-          if(id) openDetail(id); 
-      }
-  }
-
-  async function fetchBookings() {
-      // Coba ambil data booking (Jika tabel 'bookings' belum dibuat di Supabase, ini akan error silent)
-      let { data, error } = await supabase.from('bookings').select('*');
-      if (!error && data) {
-          bookings = data;
+          if(id) setTimeout(() => openDetail(id), 500);
       }
   }
 
   // ==========================================
-  // 4. LOGIKA FILTER & PENCARIAN (FUSE.JS)
+  // OPEN DETAIL (VERSI PERBAIKAN)
   // ==========================================
-  function applyAllFilters() {
-      if(currentView !== 'search') return;
+  function openDetail(id) {
+      console.log("Mencoba buka ID:", id);
 
-      let txt = document.getElementById("searchInput").value.toLowerCase();
+      // 1. Cari Data (Case Insensitive & Trimmed)
+      const data = properties.find(p => String(p.id).toLowerCase() === String(id).trim().toLowerCase());
       
-      // Cek tombol filter kategori yang aktif (Jual/Sewa/Hot)
-      let activeBtn = document.querySelector("#viewSearch .filter-btn.active");
-      let cat = "all";
-      if (activeBtn) {
-          let t = activeBtn.textContent.toLowerCase();
-          if (t.includes("dijual")) cat="jual"; 
-          else if (t.includes("disewa")) cat="sewa"; 
-          else if (t.includes("hot")) cat="hot";
+      if(!data) {
+          alert("Gagal membuka detail: ID " + id + " tidak ditemukan di data yang dimuat.");
+          return;
+      }
+      
+      currentPropId = String(data.id); 
+      addToHistory(currentPropId);
+
+      // 2. Tampilan Harga (Jual/Sewa)
+      let hJual = data.price_display || "";
+      let hSewa = data.price_rent || ""; // Pastikan kolom ini ada di Supabase
+      let priceHtmlDisplay = "";
+
+      if(hJual && hSewa) {
+        priceHtmlDisplay = `
+        <div style="background:#fffbeb; border:1px solid #ffeaa7; padding:10px; border-radius:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding-bottom:5px; margin-bottom:5px;">
+                <span style="font-size:12px; color:#666;">Harga Jual</span>
+                <span style="font-size:18px; font-weight:800; color:var(--dark-text);">${hJual}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span style="font-size:12px; color:#666;">Harga Sewa</span>
+                <span style="font-size:18px; font-weight:800; color:#007bff;">${hSewa}</span>
+            </div>
+        </div>`;
+      } else if (hSewa) {
+        priceHtmlDisplay = `<div class="d-price" style="color:#007bff">${hSewa} <span style="font-size:12px; font-weight:400; color:#666;">(Sewa)</span></div>`;
+      } else {
+        priceHtmlDisplay = `<div class="d-price">${hJual}</div>`;
       }
 
-      // Smart Search dengan Fuse.js
-      let searchResultIds = null;
-      if (txt.trim() !== "") {
-          const fuse = new Fuse(properties, {
-              keys: ['title', 'location', 'type'],
-              threshold: 0.4
+      // 3. Isi Text Content
+      document.getElementById('dPrice').innerHTML = priceHtmlDisplay;
+      document.getElementById('dTitle').textContent = data.title;
+      document.getElementById('dLoc').textContent = data.location;
+      document.getElementById('dKT').textContent = data.kt;
+      document.getElementById('dKM').textContent = data.km;
+      document.getElementById('dLT').textContent = data.lt;
+      document.getElementById('dLB').textContent = data.lb;
+      document.getElementById('dLantai').textContent = data.lantai || '-';
+      document.getElementById('dHadap').textContent = data.hadap || '-';
+      document.getElementById('dListrik').textContent = data.listrik || '-';
+      document.getElementById('dSurat').textContent = data.surat || '-';
+      document.getElementById('dDesc').textContent = data.desc || 'Tidak ada deskripsi.';
+
+      // 4. Nearby
+      let nearbyContainer = document.getElementById('nearbyContainer');
+      nearbyContainer.innerHTML = "";
+      let showNearby = false;
+      if (data.nearby && typeof data.nearby === 'string') {
+          let items = data.nearby.split(';');
+          items.forEach(item => {
+              if(item.trim()) {
+                  showNearby = true;
+                  let icon = 'fa-map-marker-alt';
+                  let t = item.trim().toLowerCase();
+                  if(t.includes('mall')||t.includes('plaza')) icon='fa-shopping-cart';
+                  else if(t.includes('tol')||t.includes('jalan')) icon='fa-road';
+                  else if(t.includes('sekolah')||t.includes('univ')) icon='fa-graduation-cap';
+                  else if(t.includes('rs')||t.includes('sakit')) icon='fa-hospital';
+                  nearbyContainer.innerHTML += `<div class="nearby-tag"><i class="fas ${icon}"></i> ${item.trim()}</div>`;
+              }
           });
-          const results = fuse.search(txt);
-          searchResultIds = results.map(res => res.item.id.toString());
+      }
+      document.getElementById('nearbySection').style.display = showNearby ? 'block' : 'none';
+
+      // 5. Maps & WA
+      let mapQuery = encodeURIComponent((data.location||"") + " Jakarta");
+      document.getElementById('btnSmartMap').href = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`; // Pakai link standar google agar aman
+      
+      let textHarga = (hJual && hSewa) ? `Jual ${hJual} / Sewa ${hSewa}` : (hJual || hSewa);
+      let waText = `Halo Pak Herman, saya tertarik properti: ${data.title} (${textHarga})`;
+      document.getElementById('btnWaDetail').href = `https://wa.me/6285760035568?text=${encodeURIComponent(waText)}`;
+
+      // 6. Gallery
+      const gallery = document.getElementById('detailGallery');
+      gallery.innerHTML = "";
+      if(data.images && typeof data.images === 'string') {
+          data.images.split(';').forEach(url => { 
+              if(url.trim()) gallery.innerHTML += `<img src="${url.trim()}" class="gallery-img" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`; 
+          });
       }
 
-      // Ambil nilai inputan filter lainnya
-      let minP = minPriceSliderVal;
-      let maxP = maxPriceSliderVal;
-      let selType = document.getElementById("typeFilter").value; // rumah, ruko, dll
-      let minKT = parseInt(document.getElementById("ktFilter").value) || 0;
-      let selSurat = document.getElementById("suratFilter").value;
-      let selFurnish = document.getElementById("furnishFilter").value;
-
-      let cards = document.querySelectorAll("#listingContainer .property-card");
-      let found = 0;
-
-      // Loop setiap kartu properti di layar
-      for (let i = 0; i < cards.length; i++) {
-          let c = cards[i];
-          let pid = c.id.replace('card-', ''); // ID properti
-          let show = true;
-
-          // Filter 1: Search Text
-          if (searchResultIds !== null) {
-              if (!searchResultIds.includes(pid)) show = false;
-          }
-
-          // Filter 2: Kategori (Jual/Sewa/Hot) - Logic ClassList
-          if (show && cat !== "all" && !c.classList.contains(cat)) show = false;
-
-          // Filter 3: Harga (Ambil dari atribut data-price-val)
-          if (show) { 
-              let p = parseFloat(c.getAttribute('data-price-val')) || 0; 
-              if (p < minP || p > maxP) show = false; 
-          }
-
-          // Filter 4: Tipe Properti
-          if (show) { 
-              let t = c.getAttribute('data-type'); 
-              if (selType !== 'all' && t !== selType) show = false; 
-          }
-
-          // Filter 5: Kamar Tidur
-          if (show) { 
-              let k = parseInt(c.getAttribute('data-kt')) || 0; 
-              if (k < minKT) show = false; 
-          }
-
-          // Ambil data asli untuk filter spesifik (Surat & Furnish)
-          let pData = properties.find(p => p.id.toString() === pid);
-          
-          // Filter 6: Surat
-          if (show && selSurat !== 'all' && pData) { 
-              let s = (pData.surat || '').toLowerCase(); 
-              if(!s.includes(selSurat)) show = false; 
-          }
-
-          // Filter 7: Furnish
-          if (show && selFurnish !== 'all' && pData) {
-              let sheetFurnish = (pData.furnish || '').toLowerCase();
-              let match = false;
-              if(selFurnish === 'full' && (sheetFurnish.includes('full') || sheetFurnish.includes('lengkap'))) match = true;
-              else if(selFurnish === 'semi' && sheetFurnish.includes('semi')) match = true;
-              else if(selFurnish === 'kosong' && (sheetFurnish.includes('kosong') || sheetFurnish.includes('unfurnish') || sheetFurnish === '' || sheetFurnish === '-')) match = true;
-              if(!match) show = false;
-          }
-
-          // Terapkan Display
-          if (show) { 
-              c.style.display = "flex"; 
-              found++; 
-          } else { 
-              c.style.display = "none"; 
-          }
+      // 7. Facilities
+      const facList = document.getElementById('dFac'); 
+      facList.innerHTML = "";
+      if(data.facilities && typeof data.facilities === 'string') {
+          data.facilities.split(';').forEach(f => { 
+              if(f.trim()) facList.innerHTML += `<div class="fac-item"><i class="fas fa-check-circle"></i> ${f.trim()}</div>`; 
+          });
       }
 
-      // Show/Hide No Result
-      let nr = document.querySelector('#viewSearch .no-result');
-      if(nr) nr.style.display = (found === 0) ? 'block' : 'none';
-  }
-
-  function clickStatBaru(cat) {
-      // Pindah ke tab search jika belum
-      if(currentView !== 'search') navClick(null, 'search');
-      
-      // Update tombol aktif visual
-      let btns = document.getElementsByClassName("filter-btn");
-      for (let i = 0; i < btns.length; i++) {
-          btns[i].classList.remove("active");
-          let txt = btns[i].textContent.toLowerCase();
-          if( (cat === 'all' && txt === 'semua') || (cat === 'fav' && txt.includes('disukai')) || (cat === 'jual' && txt.includes('dijual')) || (cat === 'sewa' && txt.includes('disewa')) || (cat === 'hot' && txt.includes('hot')) ) btns[i].classList.add("active");
+      // 8. Video
+      const vidBox = document.getElementById('videoBox'); 
+      if(data.video && data.video.includes("http")) { 
+          vidBox.style.display = 'block'; 
+          document.getElementById('videoContainer').innerHTML = `<iframe src="${data.video}" frameborder="0" allowfullscreen></iframe>`; 
+      } else { 
+          vidBox.style.display = 'none'; 
+          document.getElementById('videoContainer').innerHTML = ""; 
       }
-      document.getElementById('filterArea').scrollIntoView({ behavior: 'smooth' });
-      applyAllFilters();
+      
+      // 9. Show Modal
+      renderSimilarProperties(data);
+      document.getElementById('detailModal').classList.add('active'); 
+      document.body.style.overflow = 'hidden';
+      history.pushState(null, null, `#${data.id}`);
   }
 
-  function resetAllFilters() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('typeFilter').value = 'all';
-      document.getElementById('ktFilter').value = '0';
-      document.getElementById('suratFilter').value = 'all';
-      document.getElementById('furnishFilter').value = 'all';
-      document.getElementById('sortSelect').value = 'newest';
-      document.getElementById('priceSlider').noUiSlider.reset();
-      clickStatBaru('all');
-  }
-
-  function sortListings() {
-      let container = document.getElementById('listingContainer');
-      let cards = Array.from(container.getElementsByClassName('property-card'));
-      let type = document.getElementById('sortSelect').value;
-      
-      cards.sort((a, b) => {
-          let pA = parseFloat(a.getAttribute('data-price-val'))||0; 
-          let pB = parseFloat(b.getAttribute('data-price-val'))||0;
-          let dA = new Date(a.getAttribute('data-date'));
-          let dB = new Date(b.getAttribute('data-date'));
-          
-          if (type === 'price-high') return pB - pA; 
-          if (type === 'price-low') return pA - pB; 
-          if (type === 'newest') return dB - dA; 
-          if (type === 'oldest') return dA - dB; 
-          return 0;
-      });
-      
-      cards.forEach(c => container.appendChild(c));
+  function closeDetail() { 
+      document.getElementById('detailModal').classList.remove('active'); 
+      document.body.style.overflow = 'auto'; 
+      document.getElementById('videoContainer').innerHTML = ""; 
+      history.pushState(null, null, ' '); 
   }
 
   // ==========================================
-  // 5. RENDER LISTING & DETAIL
+  // RENDER LISTING
   // ==========================================
   function renderListings(data, containerId) {
     const container = document.getElementById(containerId);
     container.innerHTML = "";
 
     if(!data || data.length === 0) {
-        container.innerHTML = "<div class='no-result' style='display:block'>Belum ada data properti.</div>";
+        container.innerHTML = "<div class='no-result' style='display:block'>Tidak ada data properti.</div>";
         return;
     }
 
     let favs = JSON.parse(localStorage.getItem('myFavs')) || [];
 
     data.forEach(prop => {
-        // Handle null images safely
         let firstImg = (prop.images && prop.images.length > 5) ? prop.images.split(';')[0] : 'https://placehold.co/400x300?text=No+Image';
-        
         let isHot = (prop.category || '').toLowerCase().includes('hot');
-        let isFav = favs.includes(prop.id.toString());
+        let isFav = favs.includes(String(prop.id));
         let isNew = isNewListing(prop.date);
-        let isCompared = compareIds.includes(prop.id.toString());
+        let isCompared = compareIds.includes(String(prop.id));
 
-        // Logic Status Class (Agar filter Jual/Sewa jalan dua-duanya)
         let rawStatus = (prop.status || '').toLowerCase();
         let statusClasses = "";
         if(rawStatus.includes('jual')) statusClasses += " jual";
         if(rawStatus.includes('sewa')) statusClasses += " sewa";
         if(isHot) statusClasses += " hot";
-        if(isFav) statusClasses += " fav";
         
-        // Logic Tampilan Harga (Double Price)
         let priceHtml = "";
-        let hJual = prop.price_display || "";
-        let hSewa = prop.price_rent || "";
+        let hJual = prop.price_display;
+        let hSewa = prop.price_rent;
 
-        if (hJual !== "" && hSewa !== "") {
+        if (hJual && hSewa) {
             priceHtml = `<div class="price-tag">${hJual}</div><div style="font-size:10px; color:#007bff; font-weight:600; margin-top:-2px;"><i class="fas fa-tag"></i> Sewa: ${hSewa}</div>`;
-        } else if (hJual === "" && hSewa !== "") {
+        } else if (hSewa) {
              priceHtml = `<div class="price-tag" style="color:#007bff">${hSewa}</div>`;
         } else {
-             let oldPriceVal = parseFloat(prop.price_old) || 0;
-             let currPriceVal = parseFloat(prop.price_value) || 0;
-             if(oldPriceVal > currPriceVal) {
-                let oldPriceStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0, notation: "compact" }).format(oldPriceVal);
-                priceHtml = `<div style="display:flex; flex-direction:column; justify-content:center;"><div class="price-old-strikethrough">${oldPriceStr}</div><div class="price-tag price-dropped">${hJual} <i class="fas fa-caret-down"></i></div></div>`;
+             // Logic harga coret (Price Old)
+             if(prop.price_old > prop.price_value && prop.price_value > 0) {
+                let oldStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0, notation: "compact" }).format(prop.price_old);
+                priceHtml = `<div style="display:flex; flex-direction:column; justify-content:center;"><div class="price-old-strikethrough">${oldStr}</div><div class="price-tag price-dropped">${hJual || prop.price_value} <i class="fas fa-caret-down"></i></div></div>`;
              } else {
-                priceHtml = `<div class="price-tag">${hJual}</div>`;
+                priceHtml = `<div class="price-tag">${hJual || "Hubungi Agen"}</div>`;
              }
         }
 
-        // Tampilan Badge Status
         let displayStatus = prop.status || '';
-        let statusColorClass = 'jual'; 
-        if(rawStatus.includes('sewa') && !rawStatus.includes('jual')) statusColorClass = 'sewa';
+        let statusColorClass = (rawStatus.includes('sewa') && !rawStatus.includes('jual')) ? 'sewa' : 'jual';
         let newBadgeHtml = isNew ? '<span class="status-tag baru">✨ BARU</span>' : '';
         let badgeHtml = isHot ? '<span class="hot-deal-badge">Hot Deal</span>' : '';
-
         let propType = (prop.type || 'other').toLowerCase().trim();
-        // Ensure numbers for data attributes
-        let ktValue = parseInt(prop.kt) || 0; 
 
         let html = `
         <div class="property-card ${statusClasses} ${propType}" id="card-${prop.id}" onclick="openDetail('${prop.id}')"
@@ -2068,7 +2014,7 @@
              data-price-val="${prop.price_value}"
              data-date="${prop.date}"
              data-type="${propType}"
-             data-kt="${ktValue}">
+             data-kt="${prop.kt}">
             <div class="card-image-wrapper">
                 <div class="badge-top-left"><span class="status-tag ${statusColorClass}">${displayStatus}</span>${newBadgeHtml}${badgeHtml}</div>
                 <button class="btn-wishlist ${isFav ? 'active' : ''}" onclick="toggleLike(event, '${prop.id}')"><i class="fas fa-heart"></i></button>
@@ -2084,262 +2030,166 @@
     });
   }
 
-  function openDetail(id) {
-      // Perbaikan: Pastikan ID dikonversi ke string agar pencarian berhasil
-      // Beberapa database menyimpan ID sebagai angka, beberapa sebagai teks.
-      const data = properties.find(p => String(p.id) === String(id));
-      
-      if(!data) {
-          console.error("Properti tidak ditemukan untuk ID:", id);
-          return;
-      }
-      
-      currentPropId = String(data.id); 
-      addToHistory(currentPropId);
-
-      // --- REVISI TAMPILAN HARGA DETAIL ---
-      let hJual = data.price_display || "";
-      let hSewa = data.price_rent || "";
-      let priceHtmlDisplay = "";
-
-      // Logic tampilan harga ganda (Jual & Sewa)
-      if(hJual !== "" && hSewa !== "") {
-        priceHtmlDisplay = `
-        <div style="background:#fffbeb; border:1px solid #ffeaa7; padding:10px; border-radius:10px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #ccc; padding-bottom:5px; margin-bottom:5px;">
-                <span style="font-size:12px; color:#666;">Harga Jual</span>
-                <span style="font-size:18px; font-weight:800; color:var(--dark-text);">${hJual}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:#666;">Harga Sewa</span>
-                <span style="font-size:18px; font-weight:800; color:#007bff;">${hSewa}</span>
-            </div>
-        </div>`;
-      } else if (hJual === "" && hSewa !== "") {
-        priceHtmlDisplay = `<div class="d-price" style="color:#007bff">${hSewa} <span style="font-size:12px; font-weight:400; color:#666;">(Sewa)</span></div>`;
-      } else {
-        priceHtmlDisplay = `<div class="d-price">${hJual}</div>`;
-      }
-
-      document.getElementById('dPrice').innerHTML = priceHtmlDisplay;
-      document.getElementById('dTitle').textContent = data.title || "";
-      document.getElementById('dLoc').textContent = data.location || "";
-      document.getElementById('dKT').textContent = data.kt || '-';
-      document.getElementById('dKM').textContent = data.km || '-';
-      document.getElementById('dLT').textContent = data.lt || '-';
-      document.getElementById('dLB').textContent = data.lb || '-';
-      document.getElementById('dLantai').textContent = data.lantai || '-';
-      document.getElementById('dHadap').textContent = data.hadap || '-';
-      document.getElementById('dListrik').textContent = data.listrik || '-';
-      document.getElementById('dSurat').textContent = data.surat || '-';
-      document.getElementById('dDesc').textContent = data.desc || 'Tidak ada deskripsi.';
-
-      // Nearby Logic
-      let nearbyDiv = document.getElementById('nearbySection');
-      let nearbyContainer = document.getElementById('nearbyContainer');
-      nearbyContainer.innerHTML = "";
-      if (data.nearby && typeof data.nearby === 'string') {
-          let items = data.nearby.split(';');
-          let hasItem = false;
-          items.forEach(item => {
-              if(item.trim() !== "") {
-                  hasItem = true;
-                  let icon = 'fa-map-marker-alt';
-                  let txt = item.trim().toLowerCase();
-                  if(txt.includes('mall') || txt.includes('plaza')) icon = 'fa-shopping-cart';
-                  else if(txt.includes('tol') || txt.includes('jalan')) icon = 'fa-road';
-                  else if(txt.includes('sekolah') || txt.includes('univ')) icon = 'fa-graduation-cap';
-                  else if(txt.includes('rs') || txt.includes('sakit')) icon = 'fa-hospital';
-                  nearbyContainer.innerHTML += `<div class="nearby-tag"><i class="fas ${icon}"></i> ${item.trim()}</div>`;
-              }
-          });
-          nearbyDiv.style.display = hasItem ? 'block' : 'none';
-      } else {
-          nearbyDiv.style.display = 'none';
-      }
-
-      // Map Logic
-      let lokasiCari = (data.location || "") + " Jakarta Utara";
-      let mapQuery = encodeURIComponent(lokasiCari);
-      document.getElementById('btnSmartMap').href = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`; 
-
-      renderSimilarProperties(data);
-      
-      // WA Text
-      let textHarga = (hJual !== "" && hSewa !== "") ? `Jual ${hJual} / Sewa ${hSewa}` : (hJual || hSewa);
-      let waText = `Halo Pak Herman, saya tertarik dengan properti ini: ${data.title} (${textHarga})`;
-      document.getElementById('btnWaDetail').href = `https://wa.me/6285760035568?text=${encodeURIComponent(waText)}`;
-
-      // Gallery Images
-      const gallery = document.getElementById('detailGallery');
-      gallery.innerHTML = "";
-      if(data.images && typeof data.images === 'string') {
-          let imgs = data.images.split(';');
-          imgs.forEach(url => { 
-              if(url.trim() !== "") {
-                  // Perbaikan: Gunakan onerror agar gambar rusak tidak tampil jelek
-                  gallery.innerHTML += `<img src="${url.trim()}" class="gallery-img" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`; 
-              }
-          });
-      }
-      
-      // Facilities
-      const facList = document.getElementById('dFac'); 
-      facList.innerHTML = "";
-      if(data.facilities && typeof data.facilities === 'string') {
-          let facs = data.facilities.split(';');
-          facs.forEach(f => { if(f.trim() !== "") facList.innerHTML += `<div class="fac-item"><i class="fas fa-check-circle"></i> ${f.trim()}</div>`; });
-      }
-
-      // Video
-      const vidBox = document.getElementById('videoBox'); 
-      const vidContainer = document.getElementById('videoContainer');
-      if(data.video && typeof data.video === 'string' && data.video.includes("http")) { 
-          vidBox.style.display = 'block'; 
-          // Konversi link YouTube biasa ke Embed jika perlu, atau gunakan iframe langsung
-          vidContainer.innerHTML = `<iframe src="${data.video}" frameborder="0" allowfullscreen></iframe>`; 
-      } else { 
-          vidBox.style.display = 'none'; 
-          vidContainer.innerHTML = ""; 
-      }
-      
-      // Show Modal (PENTING: Ini yang membuat popup muncul)
-      document.getElementById('detailModal').classList.add('active'); 
-      document.body.style.overflow = 'hidden';
-      
-      // Update URL di browser agar bisa di-back
-      history.pushState(null, null, `#${id}`);
-  }
-
-  function closeDetail() { 
-      document.getElementById('detailModal').classList.remove('active'); 
-      document.body.style.overflow = 'auto'; 
-      document.getElementById('videoContainer').innerHTML = ""; 
-      history.pushState(null, null, ' '); 
-  }
-
   // ==========================================
-  // 6. NAVIGATION & UTILS
+  // FILTER & UTILS
   // ==========================================
-  window.addEventListener('popstate', function(event) {
-      if (!window.location.hash) {
-          if(document.getElementById('detailModal').classList.contains('active')) closeDetail();
-      } else {
-           let id = window.location.hash.substring(1);
-           if(id && properties.length > 0) openDetail(id);
-      }
-  });
-
-  function navClick(el, target) {
-      if(el) {
-          document.querySelectorAll('.nav-item').forEach(item => {
-              if(!item.classList.contains('wa-highlight')) item.classList.remove('active');
-          });
-          if(!el.classList.contains('wa-highlight')) el.classList.add('active');
-      } else {
-          document.querySelectorAll('.nav-item').forEach(item => {
-             if(item.textContent.toLowerCase().includes(target)) item.classList.add('active');
-             else item.classList.remove('active');
-          });
+  function applyAllFilters() {
+      if(currentView !== 'search') return;
+      let txt = document.getElementById("searchInput").value.toLowerCase();
+      let activeBtn = document.querySelector("#viewSearch .filter-btn.active");
+      let cat = "all";
+      if (activeBtn) {
+          let t = activeBtn.textContent.toLowerCase();
+          if (t.includes("dijual")) cat="jual"; else if (t.includes("disewa")) cat="sewa"; else if (t.includes("hot")) cat="hot";
       }
 
-      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-      scrollToTop();
-
-      if (target === 'home') {
-          document.getElementById('viewHome').classList.add('active');
-          currentView = 'home';
-      } else if (target === 'search') {
-          document.getElementById('viewSearch').classList.add('active');
-          currentView = 'search';
-          applyAllFilters();
-      } else if (target === 'fav') {
-          document.getElementById('viewFav').classList.add('active');
-          currentView = 'fav';
-          renderFavorites();
+      let searchResultIds = null;
+      if (txt.trim() !== "") {
+          const fuse = new Fuse(properties, { keys: ['title', 'location', 'type'], threshold: 0.4 });
+          const results = fuse.search(txt);
+          searchResultIds = results.map(res => String(res.item.id));
       }
+
+      let minP = minPriceSliderVal, maxP = maxPriceSliderVal;
+      let selType = document.getElementById("typeFilter").value;
+      let minKT = parseInt(document.getElementById("ktFilter").value) || 0;
+      let selSurat = document.getElementById("suratFilter").value;
+      let selFurnish = document.getElementById("furnishFilter").value;
+
+      let cards = document.querySelectorAll("#listingContainer .property-card"), found = 0;
+
+      for (let i = 0; i < cards.length; i++) {
+          let c = cards[i], show = true;
+          let pid = c.id.replace('card-', '');
+
+          if (searchResultIds !== null && !searchResultIds.includes(pid)) show = false;
+          if (show && cat !== "all" && !c.classList.contains(cat)) show = false;
+          if (show) { let p = parseFloat(c.getAttribute('data-price-val')) || 0; if (p < minP || p > maxP) show = false; }
+          if (show) { let t = c.getAttribute('data-type'); if (selType !== 'all' && t !== selType) show = false; }
+          if (show) { let k = parseInt(c.getAttribute('data-kt')) || 0; if (k < minKT) show = false; }
+
+          let pData = properties.find(p => String(p.id) === pid);
+          if (show && selSurat !== 'all' && pData) { let s = (pData.surat || '').toLowerCase(); if(!s.includes(selSurat)) show = false; }
+          if (show && selFurnish !== 'all' && pData) {
+              let f = (pData.furnish || '').toLowerCase();
+              let match = false;
+              if(selFurnish === 'full' && (f.includes('full') || f.includes('lengkap'))) match = true;
+              else if(selFurnish === 'semi' && f.includes('semi')) match = true;
+              else if(selFurnish === 'kosong' && (f.includes('kosong') || f.includes('unfurnish') || f === '' || f === '-')) match = true;
+              if(!match) show = false;
+          }
+
+          if (show) { c.style.display = "flex"; found++; } else { c.style.display = "none"; }
+      }
+      let nr = document.querySelector('#viewSearch .no-result');
+      if(nr) nr.style.display = (found === 0) ? 'block' : 'none';
   }
 
   function updateStats() {
     if(properties.length > 0) {
         document.getElementById('countAll').innerText = properties.length;
-        // Menggunakan includes agar properti Jual/Sewa masuk ke kedua statistik
         document.getElementById('countJual').innerText = properties.filter(p => (p.status||'').toLowerCase().includes('jual')).length;
         document.getElementById('countSewa').innerText = properties.filter(p => (p.status||'').toLowerCase().includes('sewa')).length;
     }
   }
 
-  function addToHistory(id) { 
-      let history = JSON.parse(localStorage.getItem('viewHistory')) || []; 
-      history = history.filter(item => item !== id.toString()); 
-      history.unshift(id.toString()); 
-      if(history.length > 10) history.pop(); 
-      localStorage.setItem('viewHistory', JSON.stringify(history)); 
-      renderHistory(); 
+  function clickStatBaru(cat) {
+      if(currentView !== 'search') navClick(null, 'search');
+      let btns = document.getElementsByClassName("filter-btn");
+      for (let i = 0; i < btns.length; i++) {
+          btns[i].classList.remove("active");
+          let txt = btns[i].textContent.toLowerCase();
+          if( (cat === 'all' && txt === 'semua') || (cat === 'fav' && txt.includes('disukai')) || (cat === 'jual' && txt.includes('dijual')) || (cat === 'sewa' && txt.includes('disewa')) || (cat === 'hot' && txt.includes('hot')) ) btns[i].classList.add("active");
+      }
+      document.getElementById('filterArea').scrollIntoView({ behavior: 'smooth' });
+      applyAllFilters();
   }
-  
+  function resetAllFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('typeFilter').value = 'all';
+      document.getElementById('ktFilter').value = '0';
+      document.getElementById('suratFilter').value = 'all';
+      document.getElementById('furnishFilter').value = 'all';
+      document.getElementById('sortSelect').value = 'newest';
+      document.getElementById('priceSlider').noUiSlider.reset();
+      clickStatBaru('all');
+  }
+  function sortListings() {
+      let container = document.getElementById('listingContainer');
+      let cards = Array.from(container.getElementsByClassName('property-card'));
+      let type = document.getElementById('sortSelect').value;
+      cards.sort((a, b) => {
+          let pA = parseFloat(a.getAttribute('data-price-val'))||0, pB = parseFloat(b.getAttribute('data-price-val'))||0, dA = new Date(a.getAttribute('data-date')), dB = new Date(b.getAttribute('data-date'));
+          if (type === 'price-high') return pB - pA; if (type === 'price-low') return pA - pB; if (type === 'newest') return dB - dA; if (type === 'oldest') return dA - dB; return 0;
+      });
+      cards.forEach(c => container.appendChild(c));
+  }
+
+  // ==========================================
+  // MISC FUNCTIONS
+  // ==========================================
+  window.addEventListener('popstate', function(event) {
+      if (!window.location.hash) { if(document.getElementById('detailModal').classList.contains('active')) closeDetail(); }
+      else { let id = window.location.hash.substring(1); if(id && properties.length > 0) openDetail(id); }
+  });
+  function navClick(el, target) {
+      if(el) { document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); if(!el.classList.contains('wa-highlight')) el.classList.add('active'); }
+      else { document.querySelectorAll('.nav-item').forEach(i => { if(i.textContent.toLowerCase().includes(target)) i.classList.add('active'); else i.classList.remove('active'); }); }
+      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active')); scrollToTop();
+      if (target === 'home') { document.getElementById('viewHome').classList.add('active'); currentView = 'home'; }
+      else if (target === 'search') { document.getElementById('viewSearch').classList.add('active'); currentView = 'search'; applyAllFilters(); }
+      else if (target === 'fav') { document.getElementById('viewFav').classList.add('active'); currentView = 'fav'; renderFavorites(); }
+  }
+  function addToHistory(id) { let history = JSON.parse(localStorage.getItem('viewHistory')) || []; history = history.filter(item => item !== id); history.unshift(id); if(history.length > 10) history.pop(); localStorage.setItem('viewHistory', JSON.stringify(history)); renderHistory(); }
   function renderHistory() {
       let history = JSON.parse(localStorage.getItem('viewHistory')) || [];
       const container = document.getElementById('historyList'); const section = document.getElementById('historySection');
       container.innerHTML = "";
-      let historyProps = history.map(id => properties.find(p => p.id.toString() === id)).filter(p => p !== undefined);
+      let historyProps = history.map(id => properties.find(p => String(p.id) === id)).filter(p => p !== undefined);
       if(historyProps.length === 0) { section.style.display = 'none'; return; }
       section.style.display = 'block';
       historyProps.forEach(p => {
           let img = (p.images && p.images.length > 5) ? p.images.split(';')[0] : 'https://placehold.co/100x100';
-          let html = `<div class="similar-card" onclick="openDetail('${p.id}')"><img src="${img}" class="similar-img"><div class="similar-body"><div class="similar-price">${p.price_display}</div><div class="similar-title">${p.title}</div></div></div>`;
-          container.insertAdjacentHTML('beforeend', html);
+          container.insertAdjacentHTML('beforeend', `<div class="similar-card" onclick="openDetail('${p.id}')"><img src="${img}" class="similar-img"><div class="similar-body"><div class="similar-price">${p.price_display}</div><div class="similar-title">${p.title}</div></div></div>`);
       });
   }
-
-  function toggleLike(event, id) {
-      event.stopPropagation(); const btn = event.currentTarget;
-      let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
-      let strId = id.toString();
-      if (favorites.includes(strId)) { favorites = favorites.filter(fav => fav !== strId); btn.classList.remove('active'); }
-      else { favorites.push(strId); btn.classList.add('active'); }
-      localStorage.setItem('myFavs', JSON.stringify(favorites));
-      if(currentView === 'fav') renderFavorites();
-  }
-
-  // Fitur Compare
-  function toggleCompare(event, id) { 
-      event.stopPropagation(); const btn = event.currentTarget; let strId = id.toString();
-      if(compareIds.includes(strId)) { compareIds = compareIds.filter(item => item !== strId); btn.classList.remove('active'); } 
-      else { if(compareIds.length >= 3) { alert("Maksimal 3 properti."); return; } compareIds.push(strId); btn.classList.add('active'); } 
-      updateCompareUI(); 
-  }
-  function updateCompareUI() { 
-      const bar = document.getElementById('compareBar'); 
-      document.getElementById('compareCount').innerText = compareIds.length; 
-      if(compareIds.length > 0) bar.classList.add('show'); else bar.classList.remove('show'); 
-  }
+  function toggleLike(event, id) { event.stopPropagation(); const btn = event.currentTarget; let favs = JSON.parse(localStorage.getItem('myFavs')) || []; let strId = String(id); if (favs.includes(strId)) { favs = favs.filter(f => f !== strId); btn.classList.remove('active'); } else { favs.push(strId); btn.classList.add('active'); } localStorage.setItem('myFavs', JSON.stringify(favs)); if(currentView === 'fav') renderFavorites(); }
+  function toggleCompare(event, id) { event.stopPropagation(); const btn = event.currentTarget; let strId = String(id); if(compareIds.includes(strId)) { compareIds = compareIds.filter(i => i !== strId); btn.classList.remove('active'); } else { if(compareIds.length >= 3) { alert("Maksimal 3 properti."); return; } compareIds.push(strId); btn.classList.add('active'); } updateCompareUI(); }
+  function updateCompareUI() { const bar = document.getElementById('compareBar'); document.getElementById('compareCount').innerText = compareIds.length; if(compareIds.length > 0) bar.classList.add('show'); else bar.classList.remove('show'); }
   function clearCompare() { compareIds = []; updateCompareUI(); document.querySelectorAll('.btn-compare.active').forEach(b => b.classList.remove('active')); }
   function openCompareModal() {
       if(compareIds.length < 2) { alert("Pilih minimal 2 properti."); return; }
       const table = document.getElementById('compareTableContent'); table.innerHTML = "";
-      const props = compareIds.map(id => properties.find(p => p.id.toString() === id));
-      // Logic render table compare simple
+      const props = compareIds.map(id => properties.find(p => String(p.id) === id));
       const rows = [ { label: '', key: 'img_header' }, { label: 'Harga', key: 'price_display' }, { label: 'Lokasi', key: 'location' }, { label: 'LT', key: 'lt' }, { label: 'LB', key: 'lb' }, { label: 'KT', key: 'kt' }, { label: 'KM', key: 'km' }, { label: 'Listrik', key: 'listrik' }, { label: 'Hadap', key: 'hadap' }, { label: 'Surat', key: 'surat' } ];
       rows.forEach(row => {
           let tr = document.createElement('tr'); let tdLabel = document.createElement('td'); tdLabel.className = 'compare-label'; tdLabel.innerText = row.label; tr.appendChild(tdLabel);
           props.forEach(p => {
               let tdVal = document.createElement('td'); tdVal.className = 'compare-val';
-              if(row.key === 'img_header') { 
-                  let img = (p.images && p.images.length > 5) ? p.images.split(';')[0] : ''; 
-                  tdVal.innerHTML = `<img src="${img}" class="compare-header-img"><div style="font-size:10px; line-height:1.2;">${p.title}</div><button onclick="removeFromCompare('${p.id}')" class="btn-remove-compare">x</button>`; 
-              } else { tdVal.innerText = p[row.key] || '-'; } 
-              tr.appendChild(tdVal);
+              if(row.key === 'img_header') { let img = (p.images && p.images.length>5) ? p.images.split(';')[0] : ''; tdVal.innerHTML = `<img src="${img}" class="compare-header-img"><div style="font-size:10px; line-height:1.2;">${p.title}</div><button onclick="removeFromCompare('${p.id}')" class="btn-remove-compare">x</button>`; } else { tdVal.innerText = p[row.key] || '-'; } tr.appendChild(tdVal);
           }); table.appendChild(tr);
       }); document.getElementById('compareModal').classList.add('active');
   }
   function closeCompareModal() { document.getElementById('compareModal').classList.remove('active'); }
   function removeFromCompare(id) { toggleCompare({ stopPropagation:()=>{}, currentTarget:{classList:{remove:()=>{}}} }, id); let btn = document.querySelector(`#card-${id} .btn-compare`); if(btn) btn.classList.remove('active'); if(compareIds.length > 0) openCompareModal(); else closeCompareModal(); }
-
-  // ==========================================
-  // 7. FITUR LAIN (KPR, BOOKING, SHARE)
-  // ==========================================
-  function renderFavorites() { let favs = JSON.parse(localStorage.getItem('myFavs')) || []; let favProps = properties.filter(p => favs.includes(p.id.toString())); renderListings(favProps, 'favContainer'); }
+  function renderSimilarProperties(currentProp) {
+      let container = document.getElementById('similarList'); let section = document.getElementById('similarSection');
+      container.innerHTML = "";
+      let similar = properties.filter(p => {
+          if(String(p.id) === String(currentProp.id)) return false;
+          let pPrice = parseFloat(p.price_value); let cPrice = parseFloat(currentProp.price_value);
+          let isPriceSimilar = (pPrice >= cPrice * 0.7) && (pPrice <= cPrice * 1.3);
+          return (p.type || '').toLowerCase() === (currentProp.type || '').toLowerCase() || isPriceSimilar;
+      }).slice(0, 4);
+      if(similar.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      similar.forEach(p => {
+          let img = (p.images && p.images.length > 5) ? p.images.split(';')[0] : 'https://placehold.co/100x100';
+          container.insertAdjacentHTML('beforeend', `<div class="similar-card" onclick="openDetail('${p.id}')"><img src="${img}" class="similar-img"><div class="similar-body"><div class="similar-price">${p.price_display}</div><div class="similar-title">${p.title}</div></div></div>`);
+      });
+  }
+  
+  // UTILS LAIN
   function switchKprTab(t) { document.querySelectorAll('.kpr-tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.kpr-content').forEach(c => c.classList.remove('active')); if(t === 'cicilan') { document.querySelectorAll('.kpr-tab-btn')[0].classList.add('active'); document.getElementById('tabCicilan').classList.add('active'); } else if(t === 'budget') { document.querySelectorAll('.kpr-tab-btn')[1].classList.add('active'); document.getElementById('tabBudget').classList.add('active'); } else { document.querySelectorAll('.kpr-tab-btn')[2].classList.add('active'); document.getElementById('tabPajak').classList.add('active'); } }
   function hitungKPR() { let h = parseFloat(document.getElementById('kprHarga').value.replace(/\./g, '')), dp = parseFloat(document.getElementById('kprDP').value), b = parseFloat(document.getElementById('kprBunga').value), t = parseFloat(document.getElementById('kprTahun').value); if(isNaN(h)) { alert("Isi harga!"); return; } let pokok = h * (1 - dp/100), bb = (b/100)/12, bln = t*12, cicil = pokok * (bb / (1 - Math.pow(1+bb, -bln))), gaji = cicil/0.3; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outPokok').innerText = fmt.format(pokok); document.getElementById('outCicilan').innerText = fmt.format(cicil); document.getElementById('outGaji').innerText = fmt.format(gaji); document.getElementById('hasilKPR').style.display = 'block'; }
   function hitungBudgetKPR() { let g = parseFloat(document.getElementById('budGaji').value.replace(/\./g, '')), p = parseFloat(document.getElementById('budPersen').value), dp = parseFloat(document.getElementById('budDP').value.replace(/\./g, '')), b = parseFloat(document.getElementById('budBunga').value), t = parseFloat(document.getElementById('budTahun').value); if(isNaN(g)) return; let maxC = g * (p/100), bb = (b/100)/12, bln = t*12, maxPinjam = maxC * ((1 - Math.pow(1+bb, -bln))/bb), maxH = maxPinjam + dp; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outBudCicilan').innerText = fmt.format(maxC); document.getElementById('outBudPinjaman').innerText = fmt.format(maxPinjam); document.getElementById('outBudMaxHarga').innerText = fmt.format(maxH); document.getElementById('hasilBudget').style.display = 'block'; }
@@ -2348,15 +2198,15 @@
   function shareKPRToWA() { let p = document.getElementById('kprHarga').value, c = document.getElementById('outCicilan').innerText; if(c === "Rp 0") { alert("Hitung dulu!"); return; } window.open(`https://wa.me/6285760035568?text=Halo Pak Herman, KPR Harga ${p}, cicilan sekitar ${c}, apakah bisa dibantu?`, '_blank'); }
   function openBooking() { document.getElementById('bookingModal').classList.add('active'); }
   function closeBooking() { document.getElementById('bookingModal').classList.remove('active'); }
-  function validateSchedule() { /* Sementara bypass validasi database */ let btn = document.getElementById('btnSendBooking'); btn.disabled = false; btn.style.opacity = '1'; }
-  function sendBookingWA() { let date = document.getElementById('bookDate').value, time = document.getElementById('bookTime').value, name = document.getElementById('bookName').value; if(!date || !time || !name) { alert("Lengkapi data!"); return; } let prop = properties.find(p => p.id.toString() === currentPropId); window.open(`https://wa.me/6285760035568?text=BOOKING SURVEY%0A${prop.title}%0A${date} jam ${time}%0AOleh: ${name}`, '_blank'); closeBooking(); }
+  function validateSchedule() { let btn = document.getElementById('btnSendBooking'); btn.disabled = false; btn.style.opacity = '1'; }
+  function sendBookingWA() { let date = document.getElementById('bookDate').value, time = document.getElementById('bookTime').value, name = document.getElementById('bookName').value; if(!date || !time || !name) { alert("Lengkapi data!"); return; } let prop = properties.find(p => String(p.id) === currentPropId); window.open(`https://wa.me/6285760035568?text=BOOKING SURVEY%0A${prop.title}%0A${date} jam ${time}%0AOleh: ${name}`, '_blank'); closeBooking(); }
   function openVendorModal() { document.getElementById('vendorModal').classList.add('active'); }
   function closeVendorModal() { document.getElementById('vendorModal').classList.remove('active'); }
   function sendVendorWA() { let v = id => document.getElementById(id).value; window.open(`https://wa.me/6285760035568?text=Titip Jual/Sewa:%0A${v('vNama')}%0A${v('vLokasi')}`, '_blank'); }
   function openBuyerModal() { document.getElementById('buyerModal').classList.add('active'); }
   function closeBuyerModal() { document.getElementById('buyerModal').classList.remove('active'); }
   function sendBuyerWA() { let v = id => document.getElementById(id).value; window.open(`https://wa.me/6285760035568?text=Cari Properti:%0A${v('bNama')}%0AArea: ${v('bArea')}`, '_blank'); }
-  function shareListing() { let data = properties.find(p => p.id.toString() === currentPropId); if(!data) return; let url = window.location.href.split('#')[0] + "#" + currentPropId; navigator.share ? navigator.share({title: data.title, text: `Cek properti ini: ${data.title}`, url: url}) : window.open(`https://wa.me/?text=${encodeURIComponent(data.title + " " + url)}`); }
+  function shareListing() { let data = properties.find(p => String(p.id) === currentPropId); if(!data) return; let url = window.location.href.split('#')[0] + "#" + currentPropId; navigator.share ? navigator.share({title: data.title, text: `Cek properti ini: ${data.title}`, url: url}) : window.open(`https://wa.me/?text=${encodeURIComponent(data.title + " " + url)}`); }
   function shareFavoritesWA() { let favs = JSON.parse(localStorage.getItem('myFavs')) || []; if(favs.length===0) { alert("Kosong!"); return; } window.open(`https://wa.me/6285760035568?text=Saya suka ${favs.length} properti di website Anda.`, '_blank'); }
   function openCalendar() { document.getElementById('calendarModal').classList.add('active'); document.getElementById('calendarList').innerHTML = "<div style='text-align:center;color:white;margin-top:50px;'>Belum ada jadwal umum. Hubungi WA untuk info.</div>"; }
   function closeCalendar() { document.getElementById('calendarModal').classList.remove('active'); }
@@ -2365,9 +2215,8 @@
   function isNewListing(d) { if(!d) return false; return (new Date() - new Date(d)) / (1000 * 60 * 60 * 24) <= 7; }
   function toggleFaq(btn) { btn.parentElement.classList.toggle('active'); }
   function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-  function generatePoster() { const data = properties.find(p => p.id.toString() === currentPropId); if(!data) return; document.getElementById('posterMainImg').src = (data.images && data.images.length > 5) ? data.images.split(';')[0] : ''; document.getElementById('posterPrice').innerText = data.price_display; document.getElementById('posterTitle').innerText = data.title; document.getElementById('posterLoc').innerText = data.location; document.getElementById('posterKT').innerText = data.kt || '-'; document.getElementById('posterKM').innerText = data.km || '-'; document.getElementById('posterLT').innerText = data.lt || '-'; document.body.style.cursor = 'wait'; setTimeout(() => { const el = document.getElementById("posterTemplate"); el.style.left = "0px"; html2canvas(el, { useCORS: true, scale: 2 }).then(canvas => { el.style.left = "-9999px"; document.body.style.cursor = 'default'; const link = document.createElement('a'); link.download = `Poster.png`; link.href = canvas.toDataURL("image/png"); link.click(); }); }, 500); }
+  function generatePoster() { const data = properties.find(p => String(p.id) === currentPropId); if(!data) return; document.getElementById('posterMainImg').src = (data.images && data.images.length > 5) ? data.images.split(';')[0] : ''; document.getElementById('posterPrice').innerText = data.price_display; document.getElementById('posterTitle').innerText = data.title; document.getElementById('posterLoc').innerText = data.location; document.getElementById('posterKT').innerText = data.kt || '-'; document.getElementById('posterKM').innerText = data.km || '-'; document.getElementById('posterLT').innerText = data.lt || '-'; document.body.style.cursor = 'wait'; setTimeout(() => { const el = document.getElementById("posterTemplate"); el.style.left = "0px"; html2canvas(el, { useCORS: true, scale: 2 }).then(canvas => { el.style.left = "-9999px"; document.body.style.cursor = 'default'; const link = document.createElement('a'); link.download = `Poster.png`; link.href = canvas.toDataURL("image/png"); link.click(); }); }, 500); }
   window.onscroll = function() { let btn = document.getElementById("btnBackTop"); if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.classList.add("show"); else btn.classList.remove("show"); };
 </script>
-
   </body>
 </html>
