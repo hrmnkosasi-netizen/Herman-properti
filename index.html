@@ -880,7 +880,7 @@
                 <input
                   type="text"
                   id="pajakNPOPTKP"
-                  value="80.000.000"
+                  value="60.000.000"
                   class="kpr-input"
                   onkeyup="formatRupiahInput(this)"
                 />
@@ -2085,18 +2085,24 @@
   }
 
   function openDetail(id) {
-      // Pastikan ID dibandingkan sebagai String agar aman
-      const data = properties.find(p => p.id.toString() === id.toString());
-      if(!data) return;
+      // Perbaikan: Pastikan ID dikonversi ke string agar pencarian berhasil
+      // Beberapa database menyimpan ID sebagai angka, beberapa sebagai teks.
+      const data = properties.find(p => String(p.id) === String(id));
       
-      currentPropId = data.id.toString();
+      if(!data) {
+          console.error("Properti tidak ditemukan untuk ID:", id);
+          return;
+      }
+      
+      currentPropId = String(data.id); 
       addToHistory(currentPropId);
 
-      // Tampilan Harga Detail
+      // --- REVISI TAMPILAN HARGA DETAIL ---
       let hJual = data.price_display || "";
       let hSewa = data.price_rent || "";
       let priceHtmlDisplay = "";
 
+      // Logic tampilan harga ganda (Jual & Sewa)
       if(hJual !== "" && hSewa !== "") {
         priceHtmlDisplay = `
         <div style="background:#fffbeb; border:1px solid #ffeaa7; padding:10px; border-radius:10px; margin-bottom:10px;">
@@ -2116,8 +2122,8 @@
       }
 
       document.getElementById('dPrice').innerHTML = priceHtmlDisplay;
-      document.getElementById('dTitle').textContent = data.title;
-      document.getElementById('dLoc').textContent = data.location;
+      document.getElementById('dTitle').textContent = data.title || "";
+      document.getElementById('dLoc').textContent = data.location || "";
       document.getElementById('dKT').textContent = data.kt || '-';
       document.getElementById('dKM').textContent = data.km || '-';
       document.getElementById('dLT').textContent = data.lt || '-';
@@ -2152,7 +2158,9 @@
           nearbyDiv.style.display = 'none';
       }
 
-      let mapQuery = encodeURIComponent(data.location + " Jakarta Utara");
+      // Map Logic
+      let lokasiCari = (data.location || "") + " Jakarta Utara";
+      let mapQuery = encodeURIComponent(lokasiCari);
       document.getElementById('btnSmartMap').href = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`; 
 
       renderSimilarProperties(data);
@@ -2162,28 +2170,44 @@
       let waText = `Halo Pak Herman, saya tertarik dengan properti ini: ${data.title} (${textHarga})`;
       document.getElementById('btnWaDetail').href = `https://wa.me/6285760035568?text=${encodeURIComponent(waText)}`;
 
-      // Gallery
+      // Gallery Images
       const gallery = document.getElementById('detailGallery');
       gallery.innerHTML = "";
       if(data.images && typeof data.images === 'string') {
           let imgs = data.images.split(';');
-          imgs.forEach(url => { if(url.trim() !== "") gallery.innerHTML += `<img src="${url.trim()}" class="gallery-img" onclick="openLightbox(this.src)" style="cursor:zoom-in;">`; });
+          imgs.forEach(url => { 
+              if(url.trim() !== "") {
+                  // Perbaikan: Gunakan onerror agar gambar rusak tidak tampil jelek
+                  gallery.innerHTML += `<img src="${url.trim()}" class="gallery-img" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`; 
+              }
+          });
       }
       
       // Facilities
-      const facList = document.getElementById('dFac'); facList.innerHTML = "";
+      const facList = document.getElementById('dFac'); 
+      facList.innerHTML = "";
       if(data.facilities && typeof data.facilities === 'string') {
           let facs = data.facilities.split(';');
           facs.forEach(f => { if(f.trim() !== "") facList.innerHTML += `<div class="fac-item"><i class="fas fa-check-circle"></i> ${f.trim()}</div>`; });
       }
 
       // Video
-      const vidBox = document.getElementById('videoBox'); const vidContainer = document.getElementById('videoContainer');
-      if(data.video && data.video.includes("http")) { vidBox.style.display = 'block'; vidContainer.innerHTML = `<iframe src="${data.video}" frameborder="0" allowfullscreen></iframe>`; } else { vidBox.style.display = 'none'; vidContainer.innerHTML = ""; }
+      const vidBox = document.getElementById('videoBox'); 
+      const vidContainer = document.getElementById('videoContainer');
+      if(data.video && typeof data.video === 'string' && data.video.includes("http")) { 
+          vidBox.style.display = 'block'; 
+          // Konversi link YouTube biasa ke Embed jika perlu, atau gunakan iframe langsung
+          vidContainer.innerHTML = `<iframe src="${data.video}" frameborder="0" allowfullscreen></iframe>`; 
+      } else { 
+          vidBox.style.display = 'none'; 
+          vidContainer.innerHTML = ""; 
+      }
       
-      // Show Modal
+      // Show Modal (PENTING: Ini yang membuat popup muncul)
       document.getElementById('detailModal').classList.add('active'); 
       document.body.style.overflow = 'hidden';
+      
+      // Update URL di browser agar bisa di-back
       history.pushState(null, null, `#${id}`);
   }
 
