@@ -1744,7 +1744,16 @@
       </a>
     </div>
 
-    <script>
+    
+          // LOAD PROPERTI
+          Papa.parse(SHEET_URL, {
+              download: true, header: true, skipEmptyLines: true,
+              complete: function(results) {
+                  properties = results.data;
+                  renderListings(properties, 'listingContainer'); // Default render ke Search
+                  updateStats();
+                  renderHistory();
+      <script>
       // ==========================================
       // CONFIG
       // ==========================================
@@ -1784,16 +1793,7 @@
               maxLabel.innerHTML = fmtShort.format(maxPriceSliderVal);
               applyAllFilters();
           });
-
-          // LOAD PROPERTI
-          Papa.parse(SHEET_URL, {
-              download: true, header: true, skipEmptyLines: true,
-              complete: function(results) {
-                  properties = results.data;
-                  renderListings(properties, 'listingContainer'); // Default render ke Search
-                  updateStats();
-                  renderHistory();
-                  applyAllFilters();
+            applyAllFilters();
                   if(window.location.hash) {
                       setTimeout(() => { openDetail(window.location.hash.substring(1)); }, 500);
                   }
@@ -2148,164 +2148,556 @@
               container.insertAdjacentHTML('beforeend', html);
           });
       }
+        
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 
-      function toggleLike(event, id) {
-          event.stopPropagation(); const btn = event.currentTarget;
-          let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
-          if (favorites.includes(id)) { favorites = favorites.filter(fav => fav !== id); btn.classList.remove('active'); }
-          else { favorites.push(id); btn.classList.add('active'); }
-          localStorage.setItem('myFavs', JSON.stringify(favorites));
+<script>
+  // ==========================================
+  // CONFIG SUPABASE (GANTI INI DENGAN PUNYA ANDA)
+  // ==========================================
+  const SUPABASE_URL = 'https://mpoebxljgdxrogzqscmh.supabase.co'; // Masukkan Project URL
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wb2VieGxqZ2R4cm9nenFzY21oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMTIwNTAsImV4cCI6MjA3OTU4ODA1MH0.tIZ0LZtzOXBolwHDsRv6hKRziLO8XrewerM71m-97UQ';      // Masukkan Anon/Public Key
 
-          // Jika sedang di halaman Favorit, reload list agar properti yg di-unlike hilang langsung
-          if(currentView === 'fav') renderFavorites();
+  // Inisialisasi Client Supabase
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let properties = [];
+  let bookings = []; // Nanti bisa dipindah ke database juga
+  let currentPropId = "";
+  let minPriceSliderVal = 0;
+  let maxPriceSliderVal = 50000000000;
+  let compareIds = [];
+  let currentView = 'home'; 
+
+  // ==========================================
+  // INIT
+  // ==========================================
+  window.addEventListener('DOMContentLoaded', async function() {
+      // INIT SLIDER
+      var priceSlider = document.getElementById('priceSlider');
+      noUiSlider.create(priceSlider, {
+          start: [0, 50000000000],
+          connect: true,
+          range: { 'min': 0, 'max': 50000000000 },
+          step: 100000000,
+          format: { to: function (v) { return Math.round(v); }, from: function (v) { return Number(v); } }
+      });
+
+      var minLabel = document.getElementById('price-min-label');
+      var maxLabel = document.getElementById('price-max-label');
+      const fmtShort = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: "compact", maximumFractionDigits: 1 });
+
+      priceSlider.noUiSlider.on('update', function (values) {
+          minPriceSliderVal = parseFloat(values[0]);
+          maxPriceSliderVal = parseFloat(values[1]);
+          minLabel.innerHTML = fmtShort.format(minPriceSliderVal);
+          maxLabel.innerHTML = fmtShort.format(maxPriceSliderVal);
+          applyAllFilters();
+      });
+
+      // --- FETCH DATA DARI SUPABASE ---
+      await fetchProperties();
+
+      // Cek hash URL (untuk direct link ke detail)
+      if(window.location.hash) {
+          setTimeout(() => { openDetail(window.location.hash.substring(1)); }, 500);
+      }
+      
+      // Load history
+      renderHistory();
+  });
+
+  // FUNGSI AMBIL DATA PROPERTI
+  async function fetchProperties() {
+      const container = document.getElementById('listingContainer');
+      
+      // Query ke Tabel 'properties' select semua kolom (*)
+      let { data, error } = await supabase
+        .from('properties') 
+        .select('*');
+
+      if (error) {
+          console.error("Error fetching properties:", error);
+          container.innerHTML = "<p style='text-align:center; padding:20px; grid-column:span 2;'>Gagal memuat data (Database Error).</p>";
+          return;
       }
 
-      function toggleCompare(event, id) { event.stopPropagation(); const btn = event.currentTarget; if(compareIds.includes(id)) { compareIds = compareIds.filter(item => item !== id); btn.classList.remove('active'); } else { if(compareIds.length >= 3) { alert("Maksimal bandingkan 3 properti sekaligus."); return; } compareIds.push(id); btn.classList.add('active'); } updateCompareUI(); }
-      function updateCompareUI() { const bar = document.getElementById('compareBar'); document.getElementById('compareCount').innerText = compareIds.length; if(compareIds.length > 0) { bar.classList.add('show'); } else { bar.classList.remove('show'); } }
-      function clearCompare() { compareIds = []; updateCompareUI(); document.querySelectorAll('.btn-compare.active').forEach(b => b.classList.remove('active')); }
-      function openCompareModal() {
-          if(compareIds.length < 2) { alert("Pilih minimal 2 properti untuk dibandingkan."); return; }
-          const table = document.getElementById('compareTableContent'); table.innerHTML = "";
-          const props = compareIds.map(id => properties.find(p => p.id === id));
-          const rows = [ { label: '', key: 'img_header' }, { label: 'Harga', key: 'price_display' }, { label: 'Lokasi', key: 'location' }, { label: 'LT (m²)', key: 'lt' }, { label: 'LB (m²)', key: 'lb' }, { label: 'K.Tidur', key: 'kt' }, { label: 'K.Mandi', key: 'km' }, { label: 'Lantai', key: 'lantai' }, { label: 'Listrik', key: 'listrik' }, { label: 'Hadap', key: 'hadap' }, { label: 'Surat', key: 'surat' } ];
-          rows.forEach(row => {
-              let tr = document.createElement('tr'); let tdLabel = document.createElement('td'); tdLabel.className = 'compare-label'; tdLabel.innerText = row.label; tr.appendChild(tdLabel);
-              props.forEach(p => {
-                  let tdVal = document.createElement('td'); tdVal.className = 'compare-val';
-                  if(row.key === 'img_header') { let img = p.images ? p.images.split(';')[0] : ''; tdVal.innerHTML = `<img src="${img}" class="compare-header-img"><div style="font-size:10px; line-height:1.2; margin-bottom:5px;">${p.title}</div><button onclick="removeFromCompare('${p.id}')" class="btn-remove-compare">x</button>`; } else { tdVal.innerText = p[row.key] || '-'; } tr.appendChild(tdVal);
-              }); table.appendChild(tr);
-          }); document.getElementById('compareModal').classList.add('active');
-      }
-      function closeCompareModal() { document.getElementById('compareModal').classList.remove('active'); }
-      function removeFromCompare(id) { toggleCompare({ stopPropagation: ()=>{} , currentTarget: { classList: { remove: ()=>{} } } }, id); let btn = document.querySelector(`#card-${id} .btn-compare`); if(btn) btn.classList.remove('active'); if(compareIds.length > 0) { openCompareModal(); } else { closeCompareModal(); } }
+      // Sukses
+      properties = data;
+      renderListings(properties, 'listingContainer');
+      updateStats();
+      applyAllFilters();
+  }
 
-      // ==========================================
-      // OTHER LOGIC (KPR, BOOKING, SHARE)
-      // ==========================================
-      function switchKprTab(t) {
-          document.querySelectorAll('.kpr-tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.kpr-content').forEach(c => c.classList.remove('active'));
-          if(t === 'cicilan') { document.querySelectorAll('.kpr-tab-btn')[0].classList.add('active'); document.getElementById('tabCicilan').classList.add('active'); }
-          else if(t === 'budget') { document.querySelectorAll('.kpr-tab-btn')[1].classList.add('active'); document.getElementById('tabBudget').classList.add('active'); }
-          else { document.querySelectorAll('.kpr-tab-btn')[2].classList.add('active'); document.getElementById('tabPajak').classList.add('active'); }
-      }
-      function hitungKPR() { let h = parseFloat(document.getElementById('kprHarga').value.replace(/\./g, '')), dp = parseFloat(document.getElementById('kprDP').value), b = parseFloat(document.getElementById('kprBunga').value), t = parseFloat(document.getElementById('kprTahun').value); if(isNaN(h)) { alert("Isi harga!"); return; } let pokok = h * (1 - dp/100), bb = (b/100)/12, bln = t*12, cicil = pokok * (bb / (1 - Math.pow(1+bb, -bln))), gaji = cicil/0.3; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outPokok').innerText = fmt.format(pokok); document.getElementById('outCicilan').innerText = fmt.format(cicil); document.getElementById('outGaji').innerText = fmt.format(gaji); document.getElementById('hasilKPR').style.display = 'block'; }
-      function hitungBudgetKPR() { let g = parseFloat(document.getElementById('budGaji').value.replace(/\./g, '')), p = parseFloat(document.getElementById('budPersen').value), dp = parseFloat(document.getElementById('budDP').value.replace(/\./g, '')), b = parseFloat(document.getElementById('budBunga').value), t = parseFloat(document.getElementById('budTahun').value); if(isNaN(g)) return; let maxC = g * (p/100), bb = (b/100)/12, bln = t*12, maxPinjam = maxC * ((1 - Math.pow(1+bb, -bln))/bb), maxH = maxPinjam + dp; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outBudCicilan').innerText = fmt.format(maxC); document.getElementById('outBudPinjaman').innerText = fmt.format(maxPinjam); document.getElementById('outBudMaxHarga').innerText = fmt.format(maxH); document.getElementById('hasilBudget').style.display = 'block'; }
-      function hitungPajak() { let h = parseFloat(document.getElementById('pajakHarga').value.replace(/\./g, '')), npoptkp = parseFloat(document.getElementById('pajakNPOPTKP').value.replace(/\./g, '')), persenNotaris = parseFloat(document.getElementById('pajakPersenNotaris').value); if(isNaN(h)) { alert("Masukkan Harga Transaksi!"); return; } if(isNaN(npoptkp)) npoptkp = 0; let kenaPajak = h - npoptkp; if (kenaPajak < 0) kenaPajak = 0; let bphtb = kenaPajak * 0.05; let biayaNotaris = h * (persenNotaris / 100); let totalBiaya = bphtb + biayaNotaris; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outBPHTB').innerText = fmt.format(bphtb); document.getElementById('outNotaris').innerText = fmt.format(biayaNotaris); document.getElementById('outTotalPajak').innerText = fmt.format(totalBiaya); document.getElementById('hasilPajak').style.display = 'block'; }
-      function shareKPRToWA() { let price = document.getElementById('kprHarga').value; let dp = document.getElementById('kprDP').value; let tenor = document.getElementById('kprTahun').value; let cicilan = document.getElementById('outCicilan').innerText; let gaji = document.getElementById('outGaji').innerText; if(cicilan === "Rp 0" || cicilan === "") { alert("Silakan klik tombol 'Hitung Angsuran' terlebih dahulu."); return; } let msg = `Halo Pak Herman, saya sudah hitung simulasi KPR di website Anda:%0A%0A🏠 Harga Properti: Rp ${price}%0A📉 DP: ${dp}%25%0A⏳ Tenor: ${tenor} Tahun%0A%0A💰 *Estimasi Angsuran: ${cicilan} /bulan*%0A💵 Syarat Gaji Min: ${gaji}%0A%0AApakah properti ini bisa diproses? Terima kasih.`; window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); }
-      function formatRupiahInput(a) { let val = a.value.replace(/[^,\d]/g, '').toString(), split = val.split(','), sisa = split[0].length % 3, rupiah = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi); if (ribuan) { rupiah += (sisa ? '.' : '') + ribuan.join('.'); } a.value = rupiah; }
-
-      function openBooking() { document.getElementById('bookingModal').classList.add('active'); }
-      function closeBooking() { document.getElementById('bookingModal').classList.remove('active'); }
-      function validateSchedule() { let dateVal = document.getElementById('bookDate').value; let timeVal = document.getElementById('bookTime').value; let btn = document.getElementById('btnSendBooking'); if(!dateVal || !timeVal) return; let isTaken = bookings.some(b => b.date === dateVal && b.time === timeVal); if(isTaken) { document.getElementById('scheduleError').style.display = 'block'; btn.disabled = true; btn.style.opacity = '0.5'; btn.innerHTML = "Jadwal Penuh"; } else { document.getElementById('scheduleError').style.display = 'none'; btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = "Kirim Jadwal via WA"; } }
-      function sendBookingWA() { let date = document.getElementById('bookDate').value; let time = document.getElementById('bookTime').value; let name = document.getElementById('bookName').value; let prop = properties.find(p => p.id === currentPropId); if(!date || !time || !name) { alert("Lengkapi data!"); return; } let msg = `Halo Pak Herman, saya ingin BOOKING JADWAL SURVEY.%0A%0A🏠 Properti: ${prop.title}%0A📅 Tanggal: ${date}%0A⏰ Jam: ${time}%0A👤 Nama: ${name}%0A%0AMohon dikonfirmasi.`; window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); closeBooking(); }
-
-      function openVendorModal() { document.getElementById('vendorModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
-      function closeVendorModal() { document.getElementById('vendorModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
-      function sendVendorWA() { let v = id => document.getElementById(id).value; if(v('vNama')===""||v('vLokasi')===""||v('vHarga')==="") { alert("Nama, Lokasi, Harga wajib!"); return; } window.open(`https://wa.me/6285760035568?text=Halo Pak Herman, titip properti:%0A${v('vNama')}%0A${v('vLokasi')}%0A${v('vHarga')}`, '_blank'); }
-      function openBuyerModal() { document.getElementById('buyerModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
-      function closeBuyerModal() { document.getElementById('buyerModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
-      function sendBuyerWA() { let nama = document.getElementById('bNama').value; let budget = document.getElementById('bBudget').value; let area = document.getElementById('bArea').value; let jenis = document.getElementById('bJenis').value; let catatan = document.getElementById('bCatatan').value; if(!nama || !area) { alert("Mohon isi Nama dan Area yang dicari."); return; } let msg = `Halo Pak Herman, tolong *CARIKAN PROPERTI* dengan kriteria:%0A%0A👤 Nama: ${nama}%0A💰 Budget: ${budget}%0A📍 Area: ${area}%0A🏠 Jenis: ${jenis}%0A📝 Catatan: ${catatan}`; window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); closeBuyerModal(); }
-
-      function shareListing() { const data = properties.find(p => p.id === currentPropId); if(!data) return; let currentUrl = window.location.href.split('#')[0]; if (currentUrl.includes("file://") || currentUrl.includes("srcdoc") || currentUrl.includes("null")) { currentUrl = "https://www.brighton.co.id/hermankosasi"; } let url = currentUrl + "#" + currentPropId; let shareData = { title: 'Herman Kosasi Property', text: `Cek properti ini: ${data.title} (${data.price_display})\nLokasi: ${data.location}\n`, url: url }; if (navigator.share) { navigator.share(shareData).catch((err) => console.log('Error sharing:', err)); } else { window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text + " " + url)}`, '_blank'); } }
-
-      function shareFavoritesWA() {
-          let favs = JSON.parse(localStorage.getItem('myFavs')) || [];
-
-          if (favs.length === 0) {
-              alert("Anda belum menandai properti favorit (klik ikon hati ❤️).");
-              return;
+  // ==========================================
+  // HANDLE BROWSER BACK BUTTON
+  // ==========================================
+  window.addEventListener('popstate', function(event) {
+      if (!window.location.hash) {
+          if(document.getElementById('detailModal').classList.contains('active')) {
+              closeDetail();
           }
+      } else {
+           let id = window.location.hash.substring(1);
+           if(id && properties.length > 0) openDetail(id);
+      }
+  });
 
-          let message = "Halo Pak Herman, saya tertarik survey untuk properti favorit saya ini:\n\n";
-          let count = 0;
+  // ==========================================
+  // NAVIGATION SYSTEM
+  // ==========================================
+  function navClick(el, target) {
+      if(el) {
+          document.querySelectorAll('.nav-item').forEach(item => {
+              if(!item.classList.contains('wa-highlight')) item.classList.remove('active');
+          });
+          if(!el.classList.contains('wa-highlight')) el.classList.add('active');
+      } else {
+          document.querySelectorAll('.nav-item').forEach(item => {
+             if(item.textContent.toLowerCase().includes(target)) item.classList.add('active');
+             else item.classList.remove('active');
+          });
+      }
 
-          let currentUrl = window.location.href.split('#')[0].split('?')[0];
-          if (currentUrl.includes("file://") || currentUrl.includes("srcdoc") || currentUrl.includes("null")) {
-              currentUrl = "https://www.brighton.co.id/hermankosasi";
-          }
+      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+      scrollToTop();
 
-          favs.forEach((id) => {
-              let prop = properties.find(p => String(p.id) === String(id));
+      if (target === 'home') {
+          document.getElementById('viewHome').classList.add('active');
+          currentView = 'home';
+      } else if (target === 'search') {
+          document.getElementById('viewSearch').classList.add('active');
+          currentView = 'search';
+          // Render ulang saat masuk tab search
+          applyAllFilters();
+      } else if (target === 'fav') {
+          document.getElementById('viewFav').classList.add('active');
+          currentView = 'fav';
+          renderFavorites();
+      }
+  }
 
-              if (prop) {
-                  count++;
-                  message += `${count}. ${prop.title}\n`;
-                  message += `   💰 Harga: ${prop.price_display}\n`;
-                  message += `   🔗 Link: ${currentUrl}#${prop.id}\n\n`;
+  // ==========================================
+  // RENDER FUNCTIONS (SAMA SEPERTI SEBELUMNYA)
+  // ==========================================
+  function renderListings(data, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+
+    if(!data || data.length === 0) {
+        container.innerHTML = "<div class='no-result' style='display:block'>Belum ada data properti.</div>";
+        return;
+    }
+
+    let favs = JSON.parse(localStorage.getItem('myFavs')) || [];
+
+    data.forEach(prop => {
+        let firstImg = prop.images ? prop.images.split(';')[0] : 'https://placehold.co/400x300?text=No+Image';
+        // Note: Pastikan nama kolom di database sesuai (lowercase biasanya)
+        let isHot = (prop.category || '').toLowerCase().includes('hot');
+        let isFav = favs.includes(prop.id.toString()); // Convert ID ke string untuk aman
+        let isNew = isNewListing(prop.date);
+        let isCompared = compareIds.includes(prop.id.toString());
+
+        // --- STATUS LOGIC ---
+        let rawStatus = (prop.status || '').toLowerCase();
+        let statusClasses = "";
+        if(rawStatus.includes('jual')) statusClasses += " jual";
+        if(rawStatus.includes('sewa')) statusClasses += " sewa";
+        if(isHot) statusClasses += " hot";
+        if(isFav) statusClasses += " fav";
+        
+        // --- HARGA LOGIC ---
+        let priceHtml = "";
+        let hJual = prop.price_display || "";
+        let hSewa = prop.price_rent || "";
+
+        if (hJual !== "" && hSewa !== "") {
+            priceHtml = `<div class="price-tag">${hJual}</div><div style="font-size:10px; color:#007bff; font-weight:600; margin-top:-2px;"><i class="fas fa-tag"></i> Sewa: ${hSewa}</div>`;
+        } else if (hJual === "" && hSewa !== "") {
+             priceHtml = `<div class="price-tag" style="color:#007bff">${hSewa}</div>`;
+        } else {
+             let oldPriceVal = parseFloat(prop.price_old) || 0;
+             let currPriceVal = parseFloat(prop.price_value) || 0;
+             if(oldPriceVal > currPriceVal) {
+                let oldPriceStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0, notation: "compact" }).format(oldPriceVal);
+                priceHtml = `<div style="display:flex; flex-direction:column; justify-content:center;"><div class="price-old-strikethrough">${oldPriceStr}</div><div class="price-tag price-dropped">${hJual} <i class="fas fa-caret-down"></i></div></div>`;
+             } else {
+                priceHtml = `<div class="price-tag">${hJual}</div>`;
+             }
+        }
+
+        let displayStatus = prop.status || '';
+        let statusColorClass = 'jual'; 
+        if(rawStatus.includes('sewa') && !rawStatus.includes('jual')) statusColorClass = 'sewa';
+        let newBadgeHtml = isNew ? '<span class="status-tag baru">✨ BARU</span>' : '';
+        let badgeHtml = isHot ? '<span class="hot-deal-badge">Hot Deal</span>' : '';
+
+        let propType = (prop.type || 'other').toLowerCase().trim();
+        let ktValue = parseInt(prop.kt) || 0;
+
+        // Note: ID dikonversi ke String di dalam onclick agar aman
+        let html = `
+        <div class="property-card ${statusClasses} ${propType}" id="card-${prop.id}" onclick="openDetail('${prop.id}')"
+             data-name="${(prop.title||'').toLowerCase()}"
+             data-loc="${(prop.location||'').toLowerCase()}"
+             data-price-val="${prop.price_value}"
+             data-date="${prop.date}"
+             data-type="${propType}"
+             data-kt="${ktValue}">
+            <div class="card-image-wrapper">
+                <div class="badge-top-left"><span class="status-tag ${statusColorClass}">${displayStatus}</span>${newBadgeHtml}${badgeHtml}</div>
+                <button class="btn-wishlist ${isFav ? 'active' : ''}" onclick="toggleLike(event, '${prop.id}')"><i class="fas fa-heart"></i></button>
+                <button class="btn-compare ${isCompared ? 'active' : ''}" onclick="toggleCompare(event, '${prop.id}')" title="Bandingkan"><i class="fas fa-balance-scale"></i></button>
+                <img src="${firstImg}" class="card-img" loading="lazy" onerror="this.src='https://placehold.co/400x300?text=Image+Error'">
+            </div>
+            <div class="card-body">
+                <div>${priceHtml}<div class="prop-name">${prop.title}</div><div class="location-row"><i class="fas fa-map-marker-alt"></i> ${prop.location}</div><div class="specs-row"><span class="spec-item"><i class="fas fa-bed"></i> ${prop.kt}</span><span class="spec-item"><i class="fas fa-bath"></i> ${prop.km}</span><span class="spec-item"><i class="fas fa-expand"></i> ${prop.lt}</span></div></div>
+                <div class="card-btn">Lihat Detail</div>
+            </div>
+        </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+    });
+  }
+
+  function renderFavorites() {
+      let favs = JSON.parse(localStorage.getItem('myFavs')) || [];
+      // Bandingkan ID sebagai string
+      let favProps = properties.filter(p => favs.includes(p.id.toString()));
+      renderListings(favProps, 'favContainer');
+  }
+
+  function openDetail(id) {
+      // Pastikan ID tipe string untuk pencarian
+      const data = properties.find(p => p.id.toString() === id.toString());
+      if(!data) return;
+      currentPropId = data.id; // Simpan ID asli
+      addToHistory(data.id.toString());
+
+      let hJual = data.price_display || "";
+      let hSewa = data.price_rent || "";
+      let priceHtmlDisplay = "";
+
+      if(hJual !== "" && hSewa !== "") {
+        priceHtmlDisplay = `
+        <div style="background:#fffbeb; border:1px solid #ffeaa7; padding:10px; border-radius:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #ccc; padding-bottom:5px; margin-bottom:5px;">
+                <span style="font-size:12px; color:#666;">Harga Jual</span>
+                <span style="font-size:18px; font-weight:800; color:var(--dark-text);">${hJual}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; color:#666;">Harga Sewa</span>
+                <span style="font-size:18px; font-weight:800; color:#007bff;">${hSewa}</span>
+            </div>
+        </div>`;
+      } else if (hJual === "" && hSewa !== "") {
+        priceHtmlDisplay = `<div class="d-price" style="color:#007bff">${hSewa} <span style="font-size:12px; font-weight:400; color:#666;">(Sewa)</span></div>`;
+      } else {
+        priceHtmlDisplay = `<div class="d-price">${hJual}</div>`;
+      }
+
+      document.getElementById('dPrice').innerHTML = priceHtmlDisplay;
+      document.getElementById('dTitle').textContent = data.title;
+      document.getElementById('dLoc').textContent = data.location;
+      document.getElementById('dKT').textContent = data.kt || '-';
+      document.getElementById('dKM').textContent = data.km || '-';
+      document.getElementById('dLT').textContent = data.lt || '-';
+      document.getElementById('dLB').textContent = data.lb || '-';
+      document.getElementById('dLantai').textContent = data.lantai || '-';
+      document.getElementById('dHadap').textContent = data.hadap || '-';
+      document.getElementById('dListrik').textContent = data.listrik || '-';
+      document.getElementById('dSurat').textContent = data.surat || '-';
+      document.getElementById('dDesc').textContent = data.desc || 'Tidak ada deskripsi.';
+
+      let nearbyDiv = document.getElementById('nearbySection');
+      let nearbyContainer = document.getElementById('nearbyContainer');
+      nearbyContainer.innerHTML = "";
+      if (data.nearby && typeof data.nearby === 'string') {
+          let items = data.nearby.split(';');
+          let hasItem = false;
+          items.forEach(item => {
+              if(item.trim() !== "") {
+                  hasItem = true;
+                  let icon = 'fa-map-marker-alt';
+                  let txt = item.trim().toLowerCase();
+                  if(txt.includes('mall') || txt.includes('plaza')) icon = 'fa-shopping-cart';
+                  else if(txt.includes('tol') || txt.includes('jalan')) icon = 'fa-road';
+                  else if(txt.includes('sekolah') || txt.includes('univ')) icon = 'fa-graduation-cap';
+                  else if(txt.includes('rs') || txt.includes('sakit')) icon = 'fa-hospital';
+                  nearbyContainer.innerHTML += `<div class="nearby-tag"><i class="fas ${icon}"></i> ${item.trim()}</div>`;
               }
           });
+          nearbyDiv.style.display = hasItem ? 'block' : 'none';
+      } else {
+          nearbyDiv.style.display = 'none';
+      }
 
-          message += "Mohon infonya kapan bisa survey lokasi. Terima kasih.";
+      let mapQuery = encodeURIComponent(data.location + " Jakarta Utara");
+      document.getElementById('btnSmartMap').href = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`; 
 
-          if(count === 0) {
-              alert("Data properti favorit tidak ditemukan (mungkin ID berubah atau data loading).");
-          } else {
-              let waLink = `https://wa.me/6285760035568?text=${encodeURIComponent(message)}`;
-              window.open(waLink, '_blank');
+      renderSimilarProperties(data);
+      
+      let textHarga = (hJual !== "" && hSewa !== "") ? `Jual ${hJual} / Sewa ${hSewa}` : (hJual || hSewa);
+      let waText = `Halo Pak Herman, saya tertarik dengan properti ini: ${data.title} (${textHarga})`;
+      document.getElementById('btnWaDetail').href = `https://wa.me/6285760035568?text=${encodeURIComponent(waText)}`;
+
+      const gallery = document.getElementById('detailGallery');
+      gallery.innerHTML = "";
+      if(data.images) {
+          let imgs = data.images.split(';');
+          imgs.forEach(url => { if(url.trim() !== "") gallery.innerHTML += `<img src="${url.trim()}" class="gallery-img" onclick="openLightbox(this.src)" style="cursor:zoom-in;">`; });
+      }
+      
+      const facList = document.getElementById('dFac'); facList.innerHTML = "";
+      if(data.facilities) {
+          let facs = data.facilities.split(';');
+          facs.forEach(f => { if(f.trim() !== "") facList.innerHTML += `<div class="fac-item"><i class="fas fa-check-circle"></i> ${f.trim()}</div>`; });
+      }
+
+      const vidBox = document.getElementById('videoBox'); const vidContainer = document.getElementById('videoContainer');
+      if(data.video && data.video.includes("http")) { vidBox.style.display = 'block'; vidContainer.innerHTML = `<iframe src="${data.video}" frameborder="0" allowfullscreen></iframe>`; } else { vidBox.style.display = 'none'; vidContainer.innerHTML = ""; }
+      document.getElementById('detailModal').classList.add('active'); document.body.style.overflow = 'hidden';
+      history.pushState(null, null, `#${id}`);
+  }
+  
+  // ==========================================
+  // UTILS & FILTER (DENGAN FUSE.JS)
+  // ==========================================
+  function updateStats() {
+    if(properties.length > 0) {
+        document.getElementById('countAll').innerText = properties.length;
+        document.getElementById('countJual').innerText = properties.filter(p => (p.status||'').toLowerCase().includes('jual')).length;
+        document.getElementById('countSewa').innerText = properties.filter(p => (p.status||'').toLowerCase().includes('sewa')).length;
+    }
+  }
+
+  function resetAllFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('typeFilter').value = 'all';
+      document.getElementById('ktFilter').value = '0';
+      document.getElementById('suratFilter').value = 'all';
+      document.getElementById('furnishFilter').value = 'all';
+      document.getElementById('sortSelect').value = 'newest';
+      document.getElementById('priceSlider').noUiSlider.reset();
+      clickStatBaru('all');
+  }
+
+  function clickStatBaru(cat) {
+      if(currentView !== 'search') navClick(null, 'search');
+      let btns = document.getElementsByClassName("filter-btn");
+      for (let i = 0; i < btns.length; i++) {
+          btns[i].classList.remove("active");
+          let txt = btns[i].textContent.toLowerCase();
+          if( (cat === 'all' && txt === 'semua') || (cat === 'fav' && txt.includes('disukai')) || (cat === 'jual' && txt.includes('dijual')) || (cat === 'sewa' && txt.includes('disewa')) || (cat === 'hot' && txt.includes('hot')) ) btns[i].classList.add("active");
+      }
+      document.getElementById('filterArea').scrollIntoView({ behavior: 'smooth' });
+      applyAllFilters();
+  }
+
+  function applyAllFilters() {
+      if(currentView !== 'search') return;
+
+      let txt = document.getElementById("searchInput").value.toLowerCase();
+      let activeBtn = document.querySelector("#viewSearch .filter-btn.active");
+      let cat = "all";
+      if (activeBtn) {
+          let t = activeBtn.textContent.toLowerCase();
+          if (t.includes("dijual")) cat="jual"; else if (t.includes("disewa")) cat="sewa"; else if (t.includes("hot")) cat="hot";
+      }
+
+      let searchResultIds = null;
+      if (txt.trim() !== "") {
+          const fuse = new Fuse(properties, {
+              keys: ['title', 'location', 'type'],
+              threshold: 0.4
+          });
+          const results = fuse.search(txt);
+          searchResultIds = results.map(res => res.item.id);
+      }
+
+      let minP = minPriceSliderVal, maxP = maxPriceSliderVal;
+      let selType = document.getElementById("typeFilter").value;
+      let minKT = parseInt(document.getElementById("ktFilter").value) || 0;
+      let selSurat = document.getElementById("suratFilter").value;
+      let selFurnish = document.getElementById("furnishFilter").value;
+
+      let cards = document.querySelectorAll("#listingContainer .property-card"), found = 0;
+
+      for (let i = 0; i < cards.length; i++) {
+          let c = cards[i], show = true;
+          let pid = c.id.replace('card-', '');
+
+          if (searchResultIds !== null) {
+              // Bandingkan ID sebagai string
+              if (!searchResultIds.includes(Number(pid)) && !searchResultIds.includes(String(pid))) show = false;
           }
+
+          if (show && cat !== "all" && !c.classList.contains(cat)) show = false;
+          if (show) { let p = parseFloat(c.getAttribute('data-price-val')) || 0; if (p < minP || p > maxP) show = false; }
+          if (show) { let t = c.getAttribute('data-type'); if (selType !== 'all' && t !== selType) show = false; }
+          if (show) { let k = parseInt(c.getAttribute('data-kt')) || 0; if (k < minKT) show = false; }
+
+          // Perbaikan: Ambil data properti berdasarkan ID yang cocok (string/number safe)
+          let pData = properties.find(p => p.id.toString() === pid);
+          
+          if (show && selSurat !== 'all' && pData) { let s = (pData.surat || '').toLowerCase(); if(!s.includes(selSurat)) show = false; }
+          if (show && selFurnish !== 'all' && pData) {
+              let sheetFurnish = (pData.furnish || '').toLowerCase();
+              let match = false;
+              if(selFurnish === 'full' && (sheetFurnish.includes('full') || sheetFurnish.includes('lengkap'))) match = true;
+              else if(selFurnish === 'semi' && sheetFurnish.includes('semi')) match = true;
+              else if(selFurnish === 'kosong' && (sheetFurnish.includes('kosong') || sheetFurnish.includes('unfurnish') || sheetFurnish === '' || sheetFurnish === '-')) match = true;
+              if(!match) show = false;
+          }
+
+          if (show) { c.style.display = "flex"; found++; } else { c.style.display = "none"; }
       }
+      let nr = document.querySelector('#viewSearch .no-result');
+      if(nr) nr.style.display = (found === 0) ? 'block' : 'none';
+  }
 
-      function openCalendar() { document.getElementById('calendarModal').classList.add('active'); }
-      function closeCalendar() { document.getElementById('calendarModal').classList.remove('active'); }
-      function renderCalendarEvents() { const container = document.getElementById('calendarList'); container.innerHTML = ""; bookings.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time)); let upcoming = bookings.filter(b => new Date(b.date) >= new Date().setHours(0,0,0,0)); if(upcoming.length === 0) { container.innerHTML = "<div style='text-align:center; color:white; margin-top:50px;'>Belum ada jadwal mendatang.</div>"; return; } upcoming.forEach(evt => { let d = new Date(evt.date); let type = evt.type ? evt.type.toLowerCase() : 'umum'; let html = `<div class="calendar-card" style="border-left-color: ${type === 'internal' ? '#FFCC00' : '#007bff'}"><div class="cc-left"><span class="cc-date">${d.getDate()}</span><span class="cc-month">${d.toLocaleString('default', { month: 'short' })}</span></div><div class="cc-right"><div class="cc-badge ${type}">${evt.type || 'Meeting'}</div><div class="cc-title">${evt.title}</div><div class="cc-time"><i class="far fa-clock"></i> ${evt.time} WIB</div></div></div>`; container.insertAdjacentHTML('beforeend', html); }); }
+  function sortListings() {
+      let container = document.getElementById('listingContainer');
+      let cards = Array.from(container.getElementsByClassName('property-card'));
+      let type = document.getElementById('sortSelect').value;
+      cards.sort((a, b) => {
+          let pA = parseFloat(a.getAttribute('data-price-val'))||0, pB = parseFloat(b.getAttribute('data-price-val'))||0, dA = new Date(a.getAttribute('data-date')), dB = new Date(b.getAttribute('data-date'));
+          if (type === 'price-high') return pB - pA; if (type === 'price-low') return pA - pB; if (type === 'newest') return dB - dA; if (type === 'oldest') return dA - dB; return 0;
+      });
+      cards.forEach(c => container.appendChild(c));
+  }
 
-      function openLightbox(src) { document.getElementById('lightboxImage').src = src; document.getElementById('lightboxModal').classList.add('active'); }
-      function closeLightbox() { document.getElementById('lightboxModal').classList.remove('active'); }
-      function isNewListing(d) { if(!d) return false; return (new Date() - new Date(d)) / (1000 * 60 * 60 * 24) <= 7; }
-      function toggleFaq(btn) { btn.parentElement.classList.toggle('active'); }
-      function updateStats() { if(properties.length > 0) { document.getElementById('countAll').innerText = properties.length; document.getElementById('countJual').innerText = properties.filter(p => p.status.toLowerCase() === 'jual').length; document.getElementById('countSewa').innerText = properties.filter(p => p.status.toLowerCase() === 'sewa').length; } }
+  // ==========================================
+  // HELPER FUNCTIONS (History, Compare, Like)
+  // ==========================================
+  function addToHistory(id) { 
+      let history = JSON.parse(localStorage.getItem('viewHistory')) || []; 
+      history = history.filter(item => item !== id); 
+      history.unshift(id); 
+      if(history.length > 10) history.pop(); 
+      localStorage.setItem('viewHistory', JSON.stringify(history)); 
+      renderHistory(); 
+  }
+  
+  function renderHistory() {
+      let history = JSON.parse(localStorage.getItem('viewHistory')) || [];
+      const container = document.getElementById('historyList'); const section = document.getElementById('historySection');
+      container.innerHTML = "";
+      // Filter properti berdasarkan ID string
+      let historyProps = history.map(id => properties.find(p => p.id.toString() === id.toString())).filter(p => p !== undefined);
+      if(historyProps.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      historyProps.forEach(p => {
+          let img = p.images ? p.images.split(';')[0] : 'https://placehold.co/100x100';
+          let html = `<div class="similar-card" onclick="openDetail('${p.id}')"><img src="${img}" class="similar-img"><div class="similar-body"><div class="similar-price">${p.price_display}</div><div class="similar-title">${p.title}</div></div></div>`;
+          container.insertAdjacentHTML('beforeend', html);
+      });
+  }
 
-      window.onscroll = function() { let btn = document.getElementById("btnBackTop"); if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.classList.add("show"); else btn.classList.remove("show"); };
-      function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function toggleLike(event, id) {
+      event.stopPropagation(); const btn = event.currentTarget;
+      let favorites = JSON.parse(localStorage.getItem('myFavs')) || [];
+      let strId = id.toString();
+      if (favorites.includes(strId)) { favorites = favorites.filter(fav => fav !== strId); btn.classList.remove('active'); }
+      else { favorites.push(strId); btn.classList.add('active'); }
+      localStorage.setItem('myFavs', JSON.stringify(favorites));
+      if(currentView === 'fav') renderFavorites();
+  }
 
-      // ==========================================
-      // FITUR BARU: GENERATE POSTER
-      // ==========================================
-      function generatePoster() {
-          const data = properties.find(p => p.id === currentPropId);
-          if(!data) return;
+  function toggleCompare(event, id) { 
+      event.stopPropagation(); 
+      const btn = event.currentTarget; 
+      let strId = id.toString();
+      if(compareIds.includes(strId)) { 
+          compareIds = compareIds.filter(item => item !== strId); 
+          btn.classList.remove('active'); 
+      } else { 
+          if(compareIds.length >= 3) { alert("Maksimal bandingkan 3 properti sekaligus."); return; } 
+          compareIds.push(strId); 
+          btn.classList.add('active'); 
+      } 
+      updateCompareUI(); 
+  }
+  
+  function updateCompareUI() { 
+      const bar = document.getElementById('compareBar'); 
+      document.getElementById('compareCount').innerText = compareIds.length; 
+      if(compareIds.length > 0) { bar.classList.add('show'); } else { bar.classList.remove('show'); } 
+  }
+  function clearCompare() { compareIds = []; updateCompareUI(); document.querySelectorAll('.btn-compare.active').forEach(b => b.classList.remove('active')); }
+  function openCompareModal() {
+      if(compareIds.length < 2) { alert("Pilih minimal 2 properti untuk dibandingkan."); return; }
+      const table = document.getElementById('compareTableContent'); table.innerHTML = "";
+      const props = compareIds.map(id => properties.find(p => p.id.toString() === id));
+      const rows = [ { label: '', key: 'img_header' }, { label: 'Harga', key: 'price_display' }, { label: 'Lokasi', key: 'location' }, { label: 'LT (m²)', key: 'lt' }, { label: 'LB (m²)', key: 'lb' }, { label: 'K.Tidur', key: 'kt' }, { label: 'K.Mandi', key: 'km' }, { label: 'Lantai', key: 'lantai' }, { label: 'Listrik', key: 'listrik' }, { label: 'Hadap', key: 'hadap' }, { label: 'Surat', key: 'surat' } ];
+      rows.forEach(row => {
+          let tr = document.createElement('tr'); let tdLabel = document.createElement('td'); tdLabel.className = 'compare-label'; tdLabel.innerText = row.label; tr.appendChild(tdLabel);
+          props.forEach(p => {
+              let tdVal = document.createElement('td'); tdVal.className = 'compare-val';
+              if(row.key === 'img_header') { let img = p.images ? p.images.split(';')[0] : ''; tdVal.innerHTML = `<img src="${img}" class="compare-header-img"><div style="font-size:10px; line-height:1.2; margin-bottom:5px;">${p.title}</div><button onclick="removeFromCompare('${p.id}')" class="btn-remove-compare">x</button>`; } else { tdVal.innerText = p[row.key] || '-'; } tr.appendChild(tdVal);
+          }); table.appendChild(tr);
+      }); document.getElementById('compareModal').classList.add('active');
+  }
+  function closeCompareModal() { document.getElementById('compareModal').classList.remove('active'); }
+  function removeFromCompare(id) { toggleCompare({ stopPropagation: ()=>{} , currentTarget: { classList: { remove: ()=>{} } } }, id); let btn = document.querySelector(`#card-${id} .btn-compare`); if(btn) btn.classList.remove('active'); if(compareIds.length > 0) { openCompareModal(); } else { closeCompareModal(); } }
+  function renderSimilarProperties(currentProp) {
+      let container = document.getElementById('similarList'); let section = document.getElementById('similarSection');
+      container.innerHTML = "";
+      let similar = properties.filter(p => {
+          if(p.id.toString() === currentProp.id.toString()) return false;
+          let pPrice = parseFloat(p.price_value); let cPrice = parseFloat(currentProp.price_value);
+          let isPriceSimilar = (pPrice >= cPrice * 0.7) && (pPrice <= cPrice * 1.3);
+          let isTypeSame = (p.type || '').toLowerCase() === (currentProp.type || '').toLowerCase();
+          return isTypeSame || isPriceSimilar;
+      }).slice(0, 4);
+      if(similar.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      similar.forEach(p => {
+          let img = p.images ? p.images.split(';')[0] : 'https://placehold.co/100x100';
+          let html = `<div class="similar-card" onclick="openDetail('${p.id}')"><img src="${img}" class="similar-img"><div class="similar-body"><div class="similar-price">${p.price_display}</div><div class="similar-title">${p.title}</div></div></div>`;
+          container.insertAdjacentHTML('beforeend', html);
+      });
+  }
 
-          // 1. Isi Data ke Hidden Template
-          document.getElementById('posterMainImg').src = data.images.split(';')[0];
-          document.getElementById('posterPrice').innerText = data.price_display;
-          document.getElementById('posterTitle').innerText = data.title;
-          document.getElementById('posterLoc').innerText = data.location;
-          document.getElementById('posterKT').innerText = data.kt || '-';
-          document.getElementById('posterKM').innerText = data.km || '-';
-          document.getElementById('posterLT').innerText = data.lt || '-';
+  // ==========================================
+  // OTHER FUNCTIONS (KPR, BOOKING, SHARE, ETC) - KEEP AS IS
+  // ==========================================
+  function switchKprTab(t) {
+      document.querySelectorAll('.kpr-tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.kpr-content').forEach(c => c.classList.remove('active'));
+      if(t === 'cicilan') { document.querySelectorAll('.kpr-tab-btn')[0].classList.add('active'); document.getElementById('tabCicilan').classList.add('active'); }
+      else if(t === 'budget') { document.querySelectorAll('.kpr-tab-btn')[1].classList.add('active'); document.getElementById('tabBudget').classList.add('active'); }
+      else { document.querySelectorAll('.kpr-tab-btn')[2].classList.add('active'); document.getElementById('tabPajak').classList.add('active'); }
+  }
+  function hitungKPR() { let h = parseFloat(document.getElementById('kprHarga').value.replace(/\./g, '')), dp = parseFloat(document.getElementById('kprDP').value), b = parseFloat(document.getElementById('kprBunga').value), t = parseFloat(document.getElementById('kprTahun').value); if(isNaN(h)) { alert("Isi harga!"); return; } let pokok = h * (1 - dp/100), bb = (b/100)/12, bln = t*12, cicil = pokok * (bb / (1 - Math.pow(1+bb, -bln))), gaji = cicil/0.3; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outPokok').innerText = fmt.format(pokok); document.getElementById('outCicilan').innerText = fmt.format(cicil); document.getElementById('outGaji').innerText = fmt.format(gaji); document.getElementById('hasilKPR').style.display = 'block'; }
+  function hitungBudgetKPR() { let g = parseFloat(document.getElementById('budGaji').value.replace(/\./g, '')), p = parseFloat(document.getElementById('budPersen').value), dp = parseFloat(document.getElementById('budDP').value.replace(/\./g, '')), b = parseFloat(document.getElementById('budBunga').value), t = parseFloat(document.getElementById('budTahun').value); if(isNaN(g)) return; let maxC = g * (p/100), bb = (b/100)/12, bln = t*12, maxPinjam = maxC * ((1 - Math.pow(1+bb, -bln))/bb), maxH = maxPinjam + dp; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outBudCicilan').innerText = fmt.format(maxC); document.getElementById('outBudPinjaman').innerText = fmt.format(maxPinjam); document.getElementById('outBudMaxHarga').innerText = fmt.format(maxH); document.getElementById('hasilBudget').style.display = 'block'; }
+  function hitungPajak() { let h = parseFloat(document.getElementById('pajakHarga').value.replace(/\./g, '')), npoptkp = parseFloat(document.getElementById('pajakNPOPTKP').value.replace(/\./g, '')), persenNotaris = parseFloat(document.getElementById('pajakPersenNotaris').value); if(isNaN(h)) { alert("Masukkan Harga Transaksi!"); return; } if(isNaN(npoptkp)) npoptkp = 0; let kenaPajak = h - npoptkp; if (kenaPajak < 0) kenaPajak = 0; let bphtb = kenaPajak * 0.05; let biayaNotaris = h * (persenNotaris / 100); let totalBiaya = bphtb + biayaNotaris; const fmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); document.getElementById('outBPHTB').innerText = fmt.format(bphtb); document.getElementById('outNotaris').innerText = fmt.format(biayaNotaris); document.getElementById('outTotalPajak').innerText = fmt.format(totalBiaya); document.getElementById('hasilPajak').style.display = 'block'; }
+  function shareKPRToWA() { let price = document.getElementById('kprHarga').value; let dp = document.getElementById('kprDP').value; let tenor = document.getElementById('kprTahun').value; let cicilan = document.getElementById('outCicilan').innerText; let gaji = document.getElementById('outGaji').innerText; if(cicilan === "Rp 0" || cicilan === "") { alert("Silakan klik tombol 'Hitung Angsuran' terlebih dahulu."); return; } let msg = `Halo Pak Herman, saya sudah hitung simulasi KPR di website Anda:%0A%0A🏠 Harga Properti: Rp ${price}%0A📉 DP: ${dp}%25%0A⏳ Tenor: ${tenor} Tahun%0A%0A💰 *Estimasi Angsuran: ${cicilan} /bulan*%0A💵 Syarat Gaji Min: ${gaji}%0A%0AApakah properti ini bisa diproses? Terima kasih.`; window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); }
+  function formatRupiahInput(a) { let val = a.value.replace(/[^,\d]/g, '').toString(), split = val.split(','), sisa = split[0].length % 3, rupiah = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi); if (ribuan) { rupiah += (sisa ? '.' : '') + ribuan.join('.'); } a.value = rupiah; }
+  function openBooking() { document.getElementById('bookingModal').classList.add('active'); }
+  function closeBooking() { document.getElementById('bookingModal').classList.remove('active'); }
+  function validateSchedule() { let dateVal = document.getElementById('bookDate').value; let timeVal = document.getElementById('bookTime').value; let btn = document.getElementById('btnSendBooking'); if(!dateVal || !timeVal) return; /* Logic booking sementara skip cek database */ btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = "Kirim Jadwal via WA"; }
+  function sendBookingWA() { let date = document.getElementById('bookDate').value; let time = document.getElementById('bookTime').value; let name = document.getElementById('bookName').value; let prop = properties.find(p => p.id.toString() === currentPropId.toString()); if(!date || !time || !name) { alert("Lengkapi data!"); return; } let msg = `Halo Pak Herman, saya ingin BOOKING JADWAL SURVEY.%0A%0A🏠 Properti: ${prop.title}%0A📅 Tanggal: ${date}%0A⏰ Jam: ${time}%0A👤 Nama: ${name}%0A%0AMohon dikonfirmasi.`; window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); closeBooking(); }
+  function openVendorModal() { document.getElementById('vendorModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeVendorModal() { document.getElementById('vendorModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
+  function sendVendorWA() { let v = id => document.getElementById(id).value; if(v('vNama')===""||v('vLokasi')===""||v('vHarga')==="") { alert("Nama, Lokasi, Harga wajib!"); return; } window.open(`https://wa.me/6285760035568?text=Halo Pak Herman, titip properti:%0A${v('vNama')}%0A${v('vLokasi')}%0A${v('vHarga')}`, '_blank'); }
+  function openBuyerModal() { document.getElementById('buyerModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeBuyerModal() { document.getElementById('buyerModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
+  function sendBuyerWA() { let nama = document.getElementById('bNama').value; let budget = document.getElementById('bBudget').value; let area = document.getElementById('bArea').value; let jenis = document.getElementById('bJenis').value; let catatan = document.getElementById('bCatatan').value; if(!nama || !area) { alert("Mohon isi Nama dan Area yang dicari."); return; } let msg = `Halo Pak Herman, tolong *CARIKAN PROPERTI* dengan kriteria:%0A%0A👤 Nama: ${nama}%0A💰 Budget: ${budget}%0A📍 Area: ${area}%0A🏠 Jenis: ${jenis}%0A📝 Catatan: ${catatan}`; window.open(`https://wa.me/6285760035568?text=${msg}`, '_blank'); closeBuyerModal(); }
+  function shareListing() { const data = properties.find(p => p.id.toString() === currentPropId.toString()); if(!data) return; let currentUrl = window.location.href.split('#')[0]; if (currentUrl.includes("file://") || currentUrl.includes("srcdoc") || currentUrl.includes("null")) { currentUrl = "https://www.brighton.co.id/hermankosasi"; } let url = currentUrl + "#" + currentPropId; let shareData = { title: 'Herman Kosasi Property', text: `Cek properti ini: ${data.title} (${data.price_display})\nLokasi: ${data.location}\n`, url: url }; if (navigator.share) { navigator.share(shareData).catch((err) => console.log('Error sharing:', err)); } else { window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text + " " + url)}`, '_blank'); } }
+  function shareFavoritesWA() { let favs = JSON.parse(localStorage.getItem('myFavs')) || []; if (favs.length === 0) { alert("Anda belum menandai properti favorit (klik ikon hati ❤️)."); return; } let message = "Halo Pak Herman, saya tertarik survey untuk properti favorit saya ini:\n\n"; let count = 0; let currentUrl = window.location.href.split('#')[0].split('?')[0]; if (currentUrl.includes("file://") || currentUrl.includes("srcdoc") || currentUrl.includes("null")) { currentUrl = "https://www.brighton.co.id/hermankosasi"; } favs.forEach((id) => { let prop = properties.find(p => p.id.toString() === id.toString()); if (prop) { count++; message += `${count}. ${prop.title}\n`; message += `   💰 Harga: ${prop.price_display}\n`; message += `   🔗 Link: ${currentUrl}#${prop.id}\n\n`; } }); message += "Mohon infonya kapan bisa survey lokasi. Terima kasih."; if(count === 0) { alert("Data properti favorit tidak ditemukan."); } else { let waLink = `https://wa.me/6285760035568?text=${encodeURIComponent(message)}`; window.open(waLink, '_blank'); } }
+  function openCalendar() { document.getElementById('calendarModal').classList.add('active'); /* Render Calendar dari DB jika perlu, saat ini dummy dulu atau integrasi ke tabel bookings */ document.getElementById('calendarList').innerHTML = "<div style='text-align:center; color:white; margin-top:50px;'>Fitur kalender sedang dalam maintenance database.</div>"; }
+  function closeCalendar() { document.getElementById('calendarModal').classList.remove('active'); }
+  function openLightbox(src) { document.getElementById('lightboxImage').src = src; document.getElementById('lightboxModal').classList.add('active'); }
+  function closeLightbox() { document.getElementById('lightboxModal').classList.remove('active'); }
+  function isNewListing(d) { if(!d) return false; return (new Date() - new Date(d)) / (1000 * 60 * 60 * 24) <= 7; }
+  function toggleFaq(btn) { btn.parentElement.classList.toggle('active'); }
+  function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function generatePoster() { /* Logic Poster Generator sama seperti sebelumnya */ const data = properties.find(p => p.id.toString() === currentPropId.toString()); if(!data) return; document.getElementById('posterMainImg').src = data.images.split(';')[0]; document.getElementById('posterPrice').innerText = data.price_display; document.getElementById('posterTitle').innerText = data.title; document.getElementById('posterLoc').innerText = data.location; document.getElementById('posterKT').innerText = data.kt || '-'; document.getElementById('posterKM').innerText = data.km || '-'; document.getElementById('posterLT').innerText = data.lt || '-'; document.body.style.cursor = 'wait'; setTimeout(() => { const element = document.getElementById("posterTemplate"); element.style.left = "0px"; html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => { element.style.left = "-9999px"; document.body.style.cursor = 'default'; const link = document.createElement('a'); link.download = `Poster-${data.title.substring(0,10)}.png`; link.href = canvas.toDataURL("image/png"); link.click(); }).catch(err => { console.error("Gagal generate poster:", err); element.style.left = "-9999px"; document.body.style.cursor = 'default'; alert("Gagal membuat poster."); }); }, 500); }
+  window.onscroll = function() { let btn = document.getElementById("btnBackTop"); if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.classList.add("show"); else btn.classList.remove("show"); };
+</script>
 
-          // 2. Tampilkan notifikasi kecil (opsional) atau ubah kursor
-          document.body.style.cursor = 'wait';
-
-          // 3. Gunakan html2canvas
-          // Timeout sebentar agar gambar sempat dirender di DOM tersembunyi
-          setTimeout(() => {
-              const element = document.getElementById("posterTemplate");
-
-              // Hack: Pindahkan element ke viewport sebentar agar terbaca
-              element.style.left = "0px";
-
-              html2canvas(element, {
-                  useCORS: true, // Penting untuk gambar external
-                  scale: 2 // Resolusi lebih tinggi
-              }).then(canvas => {
-                  // Kembalikan element ke hidden
-                  element.style.left = "-9999px";
-                  document.body.style.cursor = 'default';
-
-                  // Download Image
-                  const link = document.createElement('a');
-                  link.download = `Poster-${data.title.substring(0,10)}.png`;
-                  link.href = canvas.toDataURL("image/png");
-                  link.click();
-              }).catch(err => {
-                  console.error("Gagal generate poster:", err);
-                  element.style.left = "-9999px";
-                  document.body.style.cursor = 'default';
-                  alert("Gagal membuat poster. Pastikan koneksi internet lancar.");
-              });
-          }, 500);
-      }
-    </script>
   </body>
 </html>
